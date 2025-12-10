@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'splash_page.dart';
 
 void main() {
   runApp(const LindavSecurityApp());
@@ -18,7 +18,7 @@ class LindavSecurityApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const DashboardPage(),
+      home: const SplashPage(),
     );
   }
 }

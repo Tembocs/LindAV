@@ -14,6 +14,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const LindavSecurityApp());
+    // Wait for the splash screen to finish and navigate
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
 
     // Basic structure
     expect(find.text('Lindav Security'), findsOneWidget);
