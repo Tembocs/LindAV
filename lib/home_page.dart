@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -13,8 +17,69 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _isScanning = false;
   double _progress = 0;
   final List<ScanResult> _history = [];
+  bool _autoScanUsb = false;
+  bool _deepScan = false;
 
-  Future<void> _startScan(String type) async {
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<Directory> _getDataDirectory() async {
+    final dir = await getApplicationSupportDirectory();
+    final appDir = Directory('${dir.path}${Platform.pathSeparator}lindav');
+    if (!await appDir.exists()) {
+      await appDir.create(recursive: true);
+    }
+    return appDir;
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final dir = await _getDataDirectory();
+      final file = File('${dir.path}${Platform.pathSeparator}history.json');
+      if (!await file.exists()) return;
+      final content = await file.readAsString();
+      if (content.isEmpty) return;
+      final List<dynamic> raw = jsonDecode(content) as List<dynamic>;
+      setState(() {
+        _history
+          ..clear()
+          ..addAll(
+            raw.map((e) => ScanResult.fromJson(e as Map<String, dynamic>)),
+          );
+      });
+    } catch (_) {
+      // ignore history load errors but keep app working
+    }
+  }
+
+  Future<void> _saveHistory() async {
+    try {
+      final dir = await _getDataDirectory();
+      final file = File('${dir.path}${Platform.pathSeparator}history.json');
+      final data = _history.map((e) => e.toJson()).toList();
+      await file.writeAsString(jsonEncode(data));
+    } catch (_) {
+      // ignore errors
+    }
+  }
+
+  Future<void> _logScan(ScanResult result) async {
+    try {
+      final dir = await _getDataDirectory();
+      final file = File('${dir.path}${Platform.pathSeparator}scan.log');
+      final line =
+          '[${result.dateTime.toIso8601String()}] ${result.type} on ${result.targetPath ?? '-'}: '
+          '${result.scannedFiles} files, ${result.threatsFound} threats\n';
+      await file.writeAsString(line, mode: FileMode.append, flush: true);
+    } catch (_) {
+      // ignore errors
+    }
+  }
+
+  Future<void> _startScan(String type, {String? targetPath}) async {
     if (_isScanning) return;
 
     setState(() {
@@ -22,31 +87,102 @@ class _DashboardPageState extends State<DashboardPage> {
       _progress = 0;
     });
 
-    const totalSteps = 20;
-    for (var i = 1; i <= totalSteps; i++) {
-      await Future.delayed(const Duration(milliseconds: 150));
-      setState(() {
-        _progress = i / totalSteps;
-      });
+    int scannedFiles = 0;
+    int threats = 0;
+
+    final stopwatch = Stopwatch()..start();
+
+    // Very simple demo "scanner": counts files and
+    // flags some as "threats" based on extension / randomness.
+    Future<void> simulateScanFiles(List<FileSystemEntity> files) async {
+      final total = files.length.clamp(1, 5000);
+      for (var i = 0; i < files.length; i++) {
+        await Future.delayed(Duration(milliseconds: _deepScan ? 40 : 15));
+        scannedFiles++;
+        final path = files[i].path.toLowerCase();
+        final isExecutable =
+            path.endsWith('.exe') ||
+            path.endsWith('.bat') ||
+            path.endsWith('.cmd');
+        if (isExecutable && Random().nextBool()) {
+          threats++;
+        }
+        setState(() {
+          _progress = (i + 1) / total;
+        });
+      }
     }
 
-    final random = Random();
-    final threats = random.nextInt(3); // 0, 1 or 2
-    final scannedFiles = 500 + random.nextInt(1500);
+    if (targetPath != null) {
+      try {
+        final dir = Directory(targetPath);
+        if (await dir.exists()) {
+          final files = await dir
+              .list(recursive: _deepScan, followLinks: false)
+              .where((e) => e is File)
+              .toList();
+          await simulateScanFiles(files);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Could not scan folder: $e')));
+        }
+      }
+    } else {
+      // Quick scan: purely simulated
+      const totalSteps = 30;
+      for (var i = 1; i <= totalSteps; i++) {
+        await Future.delayed(Duration(milliseconds: _deepScan ? 80 : 40));
+        scannedFiles += 20;
+        if (Random().nextInt(40) == 0) {
+          threats++;
+        }
+        setState(() {
+          _progress = i / totalSteps;
+        });
+      }
+    }
+
+    stopwatch.stop();
+
+    final result = ScanResult(
+      type: type,
+      dateTime: DateTime.now(),
+      scannedFiles: scannedFiles,
+      threatsFound: threats,
+      targetPath: targetPath,
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
 
     setState(() {
       _isScanning = false;
       _progress = 1;
-      _history.insert(
-        0,
-        ScanResult(
-          type: type,
-          dateTime: DateTime.now(),
-          scannedFiles: scannedFiles,
-          threatsFound: threats,
+      _history.insert(0, result);
+    });
+
+    await _saveHistory();
+    await _logScan(result);
+
+    if (!mounted) return;
+    if (threats > 0) {
+      // Show alert for detected threats
+      // In a real app you would list individual files here.
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Threats detected'),
+          content: Text('Scan found $threats suspicious item(s).'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
-    });
+    }
   }
 
   @override
@@ -54,66 +190,188 @@ class _DashboardPageState extends State<DashboardPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final latest = _history.isNotEmpty ? _history.first : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lindav Security'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SecurityStatusCard(
-              isScanning: _isScanning,
-              latest: latest,
-              progress: _progress,
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldExit =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Exit Lindav Security?'),
+                content: const Text('Are you sure you want to close the app?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Exit'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        return shouldExit;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Lindav Security'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: 'Settings',
+              onPressed: _openSettings,
             ),
-            const SizedBox(height: 16),
-            _ScanActions(
-              onQuickScan: () => _startScan('Quick Scan'),
-              onFullScan: () => _startScan('Full Scan'),
-              onUsbScan: () => _startScan('USB Scan'),
-              isScanning: _isScanning,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Scan history',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _history.isEmpty
-                  ? const Center(
-                      child: Text('No scans yet. Tap Quick Scan to start.'),
-                    )
-                  : ListView.separated(
-                      itemCount: _history.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final item = _history[index];
-                        return ListTile(
-                          leading: Icon(
-                            item.threatsFound == 0
-                                ? Icons.check_circle
-                                : Icons.warning_amber_rounded,
-                            color: item.threatsFound == 0
-                                ? Colors.green
-                                : Colors.orange,
-                          ),
-                          title: Text(item.type),
-                          subtitle: Text(
-                            '${item.scannedFiles} files • ${item.threatsFound} threats • '
-                            '${_formatDateTime(item.dateTime)}',
-                          ),
-                        );
-                      },
-                    ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'About',
+              onPressed: _openAbout,
             ),
           ],
         ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SecurityStatusCard(
+                isScanning: _isScanning,
+                latest: latest,
+                progress: _progress,
+              ),
+              const SizedBox(height: 16),
+              _ScanActions(
+                onQuickScan: () => _startScan('Quick Scan'),
+                onFullScan: _startFolderScan,
+                onUsbScan: _startUsbScan,
+                isScanning: _isScanning,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Scan history',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: _history.isEmpty
+                    ? const Center(
+                        child: Text('No scans yet. Tap Quick Scan to start.'),
+                      )
+                    : ListView.separated(
+                        itemCount: _history.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final item = _history[index];
+                          return ListTile(
+                            leading: Icon(
+                              item.threatsFound == 0
+                                  ? Icons.check_circle
+                                  : Icons.warning_amber_rounded,
+                              color: item.threatsFound == 0
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                            title: Text(item.type),
+                            subtitle: Text(
+                              '${item.scannedFiles} files • ${item.threatsFound} threats • '
+                              '${_formatDateTime(item.dateTime)}',
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  Future<void> _startFolderScan() async {
+    if (_isScanning) return;
+    try {
+      final result = await FilePicker.platform.getDirectoryPath();
+      if (result == null) {
+        return; // user cancelled
+      }
+      await _startScan('Folder Scan', targetPath: result);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open folder: $e')));
+    }
+  }
+
+  Future<void> _startUsbScan() async {
+    if (_isScanning) return;
+    // Simple placeholder: let user pick a folder that represents USB.
+    await _startFolderScan();
+  }
+
+  Future<void> _openSettings() async {
+    final result = await showModalBottomSheet<(bool, bool)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        bool autoScanUsb = _autoScanUsb;
+        bool deepScan = _deepScan;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Settings', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                value: autoScanUsb,
+                title: const Text('Enable USB auto-scan (placeholder)'),
+                subtitle: const Text(
+                  'In this demo, USB auto-scan is simulated using folder scan.',
+                ),
+                onChanged: (v) {
+                  autoScanUsb = v;
+                },
+              ),
+              SwitchListTile(
+                value: deepScan,
+                title: const Text('Deep scan (slower, more thorough)'),
+                onChanged: (v) {
+                  deepScan = v;
+                },
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop((autoScanUsb, deepScan)),
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _autoScanUsb = result.$1;
+        _deepScan = result.$2;
+      });
+    }
+  }
+
+  Future<void> _openAbout() async {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Lindav Security',
+      applicationVersion: '1.0.0',
+      applicationLegalese: 'We don\'t collect user data. Demo scanner only.',
     );
   }
 }
@@ -257,12 +515,34 @@ class ScanResult {
     required this.dateTime,
     required this.scannedFiles,
     required this.threatsFound,
+    this.targetPath,
+    this.durationMs,
   });
 
   final String type;
   final DateTime dateTime;
   final int scannedFiles;
   final int threatsFound;
+  final String? targetPath;
+  final int? durationMs;
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'dateTime': dateTime.toIso8601String(),
+    'scannedFiles': scannedFiles,
+    'threatsFound': threatsFound,
+    'targetPath': targetPath,
+    'durationMs': durationMs,
+  };
+
+  factory ScanResult.fromJson(Map<String, dynamic> json) => ScanResult(
+    type: json['type'] as String,
+    dateTime: DateTime.parse(json['dateTime'] as String),
+    scannedFiles: json['scannedFiles'] as int,
+    threatsFound: json['threatsFound'] as int,
+    targetPath: json['targetPath'] as String?,
+    durationMs: json['durationMs'] as int?,
+  );
 }
 
 String _formatDateTime(DateTime dateTime) {

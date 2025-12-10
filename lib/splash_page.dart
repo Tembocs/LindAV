@@ -35,7 +35,7 @@ class _SplashPageState extends State<SplashPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.onPrimary,
                 shape: BoxShape.circle,
@@ -43,8 +43,8 @@ class _SplashPageState extends State<SplashPage> {
               child: ClipOval(
                 child: Image.asset(
                   'assets/icon.png',
-                  width: 56,
-                  height: 56,
+                  width: 96,
+                  height: 96,
                   fit: BoxFit.cover,
                 ),
               ),
