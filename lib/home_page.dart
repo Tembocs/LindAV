@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'services/network_service.dart';
+import 'settings_page.dart';
 import 'splash_page.dart';
 import 'widgets/network_status_widget.dart';
 
@@ -23,6 +24,10 @@ class _DashboardPageState extends State<DashboardPage> {
   final List<ScanResult> _history = [];
   bool _autoScanUsb = false;
   bool _deepScan = false;
+  bool _realTimeProtection = true;
+  bool _notificationsEnabled = true;
+  bool _scanOnStartup = false;
+  String _scanSchedule = 'Never';
   final NetworkService _networkService = NetworkService();
 
   @override
@@ -332,57 +337,31 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _openSettings() async {
-    final result = await showModalBottomSheet<(bool, bool)>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        bool autoScanUsb = _autoScanUsb;
-        bool deepScan = _deepScan;
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Settings', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                value: autoScanUsb,
-                title: const Text('Enable USB auto-scan (placeholder)'),
-                subtitle: const Text(
-                  'In this demo, USB auto-scan is simulated using folder scan.',
-                ),
-                onChanged: (v) {
-                  autoScanUsb = v;
-                },
-              ),
-              SwitchListTile(
-                value: deepScan,
-                title: const Text('Deep scan (slower, more thorough)'),
-                onChanged: (v) {
-                  deepScan = v;
-                },
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop((autoScanUsb, deepScan)),
-                  child: const Text('Save'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    final result = await Navigator.of(context).push<SettingsResult>(
+      MaterialPageRoute(
+        builder: (context) => SettingsPage(
+          autoScanUsb: _autoScanUsb,
+          deepScan: _deepScan,
+          realTimeProtection: _realTimeProtection,
+          notificationsEnabled: _notificationsEnabled,
+          scanOnStartup: _scanOnStartup,
+          scanSchedule: _scanSchedule,
+        ),
+      ),
     );
 
     if (result != null) {
       setState(() {
-        _autoScanUsb = result.$1;
-        _deepScan = result.$2;
+        _autoScanUsb = result.autoScanUsb;
+        _deepScan = result.deepScan;
+        _realTimeProtection = result.realTimeProtection;
+        _notificationsEnabled = result.notificationsEnabled;
+        _scanOnStartup = result.scanOnStartup;
+        _scanSchedule = result.scanSchedule;
       });
+
+      // Reload history in case it was cleared in settings
+      await _loadHistory();
     }
   }
 
