@@ -6,6 +6,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'services/network_service.dart';
+import 'widgets/network_status_widget.dart';
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -19,11 +22,19 @@ class _DashboardPageState extends State<DashboardPage> {
   final List<ScanResult> _history = [];
   bool _autoScanUsb = false;
   bool _deepScan = false;
+  final NetworkService _networkService = NetworkService();
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    _networkService.initialize();
+  }
+
+  @override
+  void dispose() {
+    _networkService.dispose();
+    super.dispose();
   }
 
   Future<Directory> _getDataDirectory() async {
@@ -219,6 +230,7 @@ class _DashboardPageState extends State<DashboardPage> {
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
           actions: [
+            const NetworkIndicator(),
             IconButton(
               icon: const Icon(Icons.settings),
               tooltip: 'Settings',
@@ -241,6 +253,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 latest: latest,
                 progress: _progress,
               ),
+              const SizedBox(height: 16),
+              const NetworkStatusWidget(),
               const SizedBox(height: 16),
               _ScanActions(
                 onQuickScan: () => _startScan('Quick Scan'),
