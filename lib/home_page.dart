@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'services/network_service.dart';
+import 'splash_page.dart';
 import 'widgets/network_status_widget.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -232,6 +233,11 @@ class _DashboardPageState extends State<DashboardPage> {
           actions: [
             const NetworkIndicator(),
             IconButton(
+              icon: const Icon(Icons.restart_alt),
+              tooltip: 'Reset App',
+              onPressed: _resetApp,
+            ),
+            IconButton(
               icon: const Icon(Icons.settings),
               tooltip: 'Settings',
               onPressed: _openSettings,
@@ -387,6 +393,57 @@ class _DashboardPageState extends State<DashboardPage> {
       applicationVersion: '1.0.0',
       applicationLegalese: 'We don\'t collect user data. Demo scanner only.',
     );
+  }
+
+  Future<void> _resetApp() async {
+    final shouldReset = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset App?'),
+        content: const Text(
+          'This will clear all scan history and reset the app to its initial state. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldReset == true) {
+      // Delete stored data files
+      try {
+        final dir = await _getDataDirectory();
+        final historyFile = File(
+          '${dir.path}${Platform.pathSeparator}history.json',
+        );
+        final logFile = File('${dir.path}${Platform.pathSeparator}scan.log');
+
+        if (await historyFile.exists()) {
+          await historyFile.delete();
+        }
+        if (await logFile.exists()) {
+          await logFile.delete();
+        }
+      } catch (_) {
+        // Ignore errors during cleanup
+      }
+
+      if (!mounted) return;
+
+      // Navigate back to splash screen to restart the app
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const SplashPage()),
+        (route) => false,
+      );
+    }
   }
 }
 
