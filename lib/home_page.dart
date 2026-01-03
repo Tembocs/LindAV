@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'services/network_service.dart';
 import 'settings_page.dart';
 import 'splash_page.dart';
+import 'threat_details_page.dart';
 import 'widgets/network_status_widget.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -105,7 +106,48 @@ class _DashboardPageState extends State<DashboardPage> {
     });
 
     int scannedFiles = 0;
-    int threats = 0;
+    List<ThreatInfo> detectedThreats = [];
+    final random = Random();
+
+    // Threat types for simulation
+    const threatTypes = [
+      {
+        'type': 'Malware',
+        'severity': 'Critical',
+        'desc':
+            'Malicious software designed to damage or gain unauthorized access to your system.',
+      },
+      {
+        'type': 'Trojan',
+        'severity': 'High',
+        'desc':
+            'A program that appears legitimate but contains malicious code to steal data or harm your system.',
+      },
+      {
+        'type': 'Adware',
+        'severity': 'Low',
+        'desc':
+            'Unwanted software that displays advertisements and may track your browsing habits.',
+      },
+      {
+        'type': 'Spyware',
+        'severity': 'High',
+        'desc':
+            'Software that secretly monitors user activity and collects personal information.',
+      },
+      {
+        'type': 'Suspicious',
+        'severity': 'Medium',
+        'desc':
+            'This file exhibits suspicious behavior patterns that may indicate potential threats.',
+      },
+      {
+        'type': 'Ransomware',
+        'severity': 'Critical',
+        'desc':
+            'Dangerous malware that encrypts your files and demands payment for decryption.',
+      },
+    ];
 
     final stopwatch = Stopwatch()..start();
 
@@ -116,13 +158,37 @@ class _DashboardPageState extends State<DashboardPage> {
       for (var i = 0; i < files.length; i++) {
         await Future.delayed(Duration(milliseconds: _deepScan ? 40 : 15));
         scannedFiles++;
-        final path = files[i].path.toLowerCase();
+        final file = files[i];
+        final path = file.path.toLowerCase();
         final isExecutable =
             path.endsWith('.exe') ||
             path.endsWith('.bat') ||
-            path.endsWith('.cmd');
-        if (isExecutable && Random().nextBool()) {
-          threats++;
+            path.endsWith('.cmd') ||
+            path.endsWith('.dll') ||
+            path.endsWith('.scr');
+        if (isExecutable && random.nextInt(3) == 0) {
+          // Create detailed threat info
+          final threatData = threatTypes[random.nextInt(threatTypes.length)];
+          final fileName = file.path.split(Platform.pathSeparator).last;
+          int fileSize = 0;
+          try {
+            final fileStat = File(file.path).statSync();
+            fileSize = fileStat.size;
+          } catch (_) {
+            fileSize = random.nextInt(500000) + 1000;
+          }
+
+          detectedThreats.add(
+            ThreatInfo(
+              filePath: file.path,
+              fileName: fileName,
+              threatType: threatData['type']!,
+              severity: threatData['severity']!,
+              description: threatData['desc']!,
+              fileSize: fileSize,
+              detectedAt: DateTime.now(),
+            ),
+          );
         }
         setState(() {
           _progress = (i + 1) / total;
@@ -148,14 +214,40 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       }
     } else {
-      // Quick scan: purely simulated
+      // Quick scan: simulated with fake threat data
       const totalSteps = 30;
+      final simulatedPaths = [
+        'C:\\Windows\\System32\\malware.exe',
+        'C:\\Users\\Public\\Downloads\\trojan.exe',
+        'C:\\Program Files\\FakeApp\\suspicious.dll',
+        'C:\\Temp\\adware.exe',
+        'C:\\Users\\User\\AppData\\Roaming\\spyware.bat',
+      ];
+
       for (var i = 1; i <= totalSteps; i++) {
         await Future.delayed(Duration(milliseconds: _deepScan ? 80 : 40));
         scannedFiles += 20;
-        if (Random().nextInt(40) == 0) {
-          threats++;
+
+        // Randomly detect threats during simulation
+        if (random.nextInt(12) == 0 && detectedThreats.length < 5) {
+          final threatData = threatTypes[random.nextInt(threatTypes.length)];
+          final fakePath =
+              simulatedPaths[detectedThreats.length % simulatedPaths.length];
+          final fileName = fakePath.split('\\').last;
+
+          detectedThreats.add(
+            ThreatInfo(
+              filePath: fakePath,
+              fileName: fileName,
+              threatType: threatData['type']!,
+              severity: threatData['severity']!,
+              description: threatData['desc']!,
+              fileSize: random.nextInt(500000) + 1000,
+              detectedAt: DateTime.now(),
+            ),
+          );
         }
+
         setState(() {
           _progress = i / totalSteps;
         });
@@ -168,9 +260,10 @@ class _DashboardPageState extends State<DashboardPage> {
       type: type,
       dateTime: DateTime.now(),
       scannedFiles: scannedFiles,
-      threatsFound: threats,
+      threatsFound: detectedThreats.length,
       targetPath: targetPath,
       durationMs: stopwatch.elapsedMilliseconds,
+      detectedThreats: detectedThreats,
     );
 
     setState(() {
@@ -183,14 +276,26 @@ class _DashboardPageState extends State<DashboardPage> {
     await _logScan(result);
 
     if (!mounted) return;
-    if (threats > 0) {
-      // Show alert for detected threats
-      // In a real app you would list individual files here.
+    if (detectedThreats.isNotEmpty) {
+      // Navigate to threat details page
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ThreatDetailsPage(
+            threats: detectedThreats,
+            scanType: type,
+            scanTime: result.dateTime,
+            totalFilesScanned: scannedFiles,
+          ),
+        ),
+      );
+    } else {
+      // Show success message for clean scan
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Threats detected'),
-          content: Text('Scan found $threats suspicious item(s).'),
+          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+          title: const Text('No Threats Found'),
+          content: Text('Scanned $scannedFiles files. Your system is clean!'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -303,12 +408,33 @@ class _DashboardPageState extends State<DashboardPage> {
                               '${item.scannedFiles} files • ${item.threatsFound} threats • '
                               '${_formatDateTime(item.dateTime)}',
                             ),
+                            trailing: item.threatsFound > 0
+                                ? const Icon(Icons.chevron_right)
+                                : null,
+                            onTap:
+                                item.threatsFound > 0 &&
+                                    item.detectedThreats.isNotEmpty
+                                ? () => _viewThreatDetails(item)
+                                : null,
                           );
                         },
                       ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _viewThreatDetails(ScanResult scanResult) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ThreatDetailsPage(
+          threats: scanResult.detectedThreats,
+          scanType: scanResult.type,
+          scanTime: scanResult.dateTime,
+          totalFilesScanned: scanResult.scannedFiles,
         ),
       ),
     );
@@ -567,6 +693,7 @@ class ScanResult {
     required this.threatsFound,
     this.targetPath,
     this.durationMs,
+    this.detectedThreats = const [],
   });
 
   final String type;
@@ -575,6 +702,7 @@ class ScanResult {
   final int threatsFound;
   final String? targetPath;
   final int? durationMs;
+  final List<ThreatInfo> detectedThreats;
 
   Map<String, dynamic> toJson() => {
     'type': type,
@@ -583,6 +711,7 @@ class ScanResult {
     'threatsFound': threatsFound,
     'targetPath': targetPath,
     'durationMs': durationMs,
+    'detectedThreats': detectedThreats.map((t) => t.toJson()).toList(),
   };
 
   factory ScanResult.fromJson(Map<String, dynamic> json) => ScanResult(
@@ -592,6 +721,11 @@ class ScanResult {
     threatsFound: json['threatsFound'] as int,
     targetPath: json['targetPath'] as String?,
     durationMs: json['durationMs'] as int?,
+    detectedThreats:
+        (json['detectedThreats'] as List<dynamic>?)
+            ?.map((e) => ThreatInfo.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        [],
   );
 }
 
