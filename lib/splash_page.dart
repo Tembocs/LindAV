@@ -69,6 +69,12 @@ class _SplashPageState extends State<SplashPage> {
                 color: colorScheme.onPrimary.withOpacity(0.8),
               ),
             ),
+            Text(
+              'Made by JERMAN COMPANY LIMITED',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onPrimary.withOpacity(0.7),
+              ),
+            ),
             const SizedBox(height: 24),
             CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
