@@ -36,6 +36,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final mutedTextColor = colorScheme.onSurfaceVariant;
     final status = _status;
 
     if (status == null) {
@@ -58,7 +59,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
                 Icon(
                   isConnected ? Icons.wifi : Icons.wifi_off,
                   size: 28,
-                  color: isConnected ? Colors.green : Colors.red,
+                  color: isConnected ? colorScheme.primary : colorScheme.error,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -72,9 +73,9 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
                       const SizedBox(height: 2),
                       Text(
                         isConnected ? status.connectionType : 'No Connection',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[700],
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
                       ),
                     ],
                   ),
@@ -106,7 +107,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
                       icon: Icons.download,
                       label: 'Download',
                       value: status.formattedDownloadSpeed,
-                      color: Colors.blue,
+                      color: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -115,7 +116,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
                       icon: Icons.upload,
                       label: 'Upload',
                       value: status.formattedUploadSpeed,
-                      color: Colors.orange,
+                      color: colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -124,13 +125,13 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
                       icon: Icons.speed,
                       label: 'Latency',
                       value: status.formattedLatency,
-                      color: Colors.purple,
+                      color: colorScheme.tertiary,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              _SpeedQualityBar(status: status),
+              _SpeedQualityBar(status: status, colorScheme: colorScheme),
             ],
           ],
         ),
@@ -154,6 +155,7 @@ class _SpeedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
@@ -162,7 +164,7 @@ class _SpeedIndicator extends StatelessWidget {
           label,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 2),
         Text(
@@ -179,8 +181,9 @@ class _SpeedIndicator extends StatelessWidget {
 
 class _SpeedQualityBar extends StatelessWidget {
   final NetworkStatus status;
+  final ColorScheme colorScheme;
 
-  const _SpeedQualityBar({required this.status});
+  const _SpeedQualityBar({required this.status, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
@@ -191,13 +194,13 @@ class _SpeedQualityBar extends StatelessWidget {
 
     Color barColor;
     if (quality >= 0.5) {
-      barColor = Colors.green;
+      barColor = colorScheme.primary;
     } else if (quality >= 0.25) {
-      barColor = Colors.lightGreen;
+      barColor = colorScheme.secondary;
     } else if (quality >= 0.1) {
-      barColor = Colors.orange;
+      barColor = colorScheme.tertiary;
     } else {
-      barColor = Colors.red;
+      barColor = colorScheme.error;
     }
 
     return Column(
@@ -208,9 +211,9 @@ class _SpeedQualityBar extends StatelessWidget {
           children: [
             Text(
               'Connection Quality',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               status.speedDescription,
@@ -226,7 +229,7 @@ class _SpeedQualityBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: status.downloadSpeed == null ? null : quality,
-            backgroundColor: Colors.grey[300],
+            backgroundColor: colorScheme.surfaceVariant,
             valueColor: AlwaysStoppedAnimation<Color>(barColor),
             minHeight: 8,
           ),
@@ -272,6 +275,9 @@ class _NetworkIndicatorState extends State<NetworkIndicator> {
     if (status == null) return const SizedBox.shrink();
 
     final isConnected = status.isConnected;
+    final colorScheme = Theme.of(context).colorScheme;
+    final connectedColor =
+        Theme.of(context).appBarTheme.foregroundColor ?? colorScheme.onPrimary;
 
     return Tooltip(
       message: isConnected
@@ -281,7 +287,7 @@ class _NetworkIndicatorState extends State<NetworkIndicator> {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Icon(
           isConnected ? Icons.wifi : Icons.wifi_off,
-          color: isConnected ? Colors.white : Colors.red[200],
+          color: isConnected ? connectedColor : colorScheme.errorContainer,
           size: 20,
         ),
       ),

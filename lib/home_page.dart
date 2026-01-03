@@ -208,9 +208,13 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Could not scan folder: $e')));
+          final colorScheme = Theme.of(context).colorScheme;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not scan folder: $e'),
+              backgroundColor: colorScheme.error,
+            ),
+          );
         }
       }
     } else {
@@ -292,17 +296,19 @@ class _DashboardPageState extends State<DashboardPage> {
       // Show success message for clean scan
       await showDialog<void>(
         context: context,
-        builder: (context) => AlertDialog(
-          icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
-          title: const Text('No Threats Found'),
-          content: Text('Scanned $scannedFiles files. Your system is clean!'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+        builder: (context) {
+          return AlertDialog(
+            icon: Icon(Icons.check_circle, color: Colors.green, size: 48),
+            title: const Text('No Threats Found'),
+            content: Text('Scanned $scannedFiles files. Your system is clean!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
       );
     }
   }
@@ -450,9 +456,13 @@ class _DashboardPageState extends State<DashboardPage> {
       await _startScan('Folder Scan', targetPath: result);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not open folder: $e')));
+      final colorScheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open folder: $e'),
+          backgroundColor: colorScheme.error,
+        ),
+      );
     }
   }
 
@@ -503,23 +513,26 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _resetApp() async {
     final shouldReset = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset App?'),
-        content: const Text(
-          'This will clear all scan history and reset the app to its initial state. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: const Text('Reset App?'),
+          content: const Text(
+            'This will clear all scan history and reset the app to its initial state. This action cannot be undone.',
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+              child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
     );
 
     if (shouldReset == true) {
@@ -606,9 +619,9 @@ class _SecurityStatusCard extends StatelessWidget {
                       latest == null
                           ? 'No scans run yet'
                           : '${latest!.type} • ${_formatDateTime(latest!.dateTime)}',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

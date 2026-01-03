@@ -3,9 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'main.dart';
 import 'services/network_service.dart';
-import 'services/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool autoScanUsb;
@@ -53,6 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final mutedIconColor = colorScheme.onSurfaceVariant.withOpacity(0.6);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,13 +75,14 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('Monitor system for threats in real-time'),
             secondary: Icon(
               Icons.shield,
-              color: _realTimeProtection ? Colors.green : Colors.grey,
+              color: _realTimeProtection ? colorScheme.primary : mutedIconColor,
             ),
             onChanged: (value) {
               setState(() {
                 _realTimeProtection = value;
               });
             },
+            activeColor: colorScheme.primary,
           ),
           const Divider(height: 1),
           SwitchListTile(
@@ -91,13 +91,14 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('Automatically scan when USB is connected'),
             secondary: Icon(
               Icons.usb,
-              color: _autoScanUsb ? Colors.green : Colors.grey,
+              color: _autoScanUsb ? colorScheme.primary : mutedIconColor,
             ),
             onChanged: (value) {
               setState(() {
                 _autoScanUsb = value;
               });
             },
+            activeColor: colorScheme.primary,
           ),
           const Divider(height: 1),
 
@@ -109,13 +110,14 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('More thorough scanning (slower)'),
             secondary: Icon(
               Icons.search,
-              color: _deepScan ? Colors.green : Colors.grey,
+              color: _deepScan ? colorScheme.primary : mutedIconColor,
             ),
             onChanged: (value) {
               setState(() {
                 _deepScan = value;
               });
             },
+            activeColor: colorScheme.primary,
           ),
           const Divider(height: 1),
           SwitchListTile(
@@ -124,13 +126,14 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('Run quick scan when app starts'),
             secondary: Icon(
               Icons.play_circle_outline,
-              color: _scanOnStartup ? Colors.green : Colors.grey,
+              color: _scanOnStartup ? colorScheme.primary : mutedIconColor,
             ),
             onChanged: (value) {
               setState(() {
                 _scanOnStartup = value;
               });
             },
+            activeColor: colorScheme.primary,
           ),
           const Divider(height: 1),
           ListTile(
@@ -150,39 +153,16 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: const Text('Get alerts for threats and scan results'),
             secondary: Icon(
               Icons.notifications,
-              color: _notificationsEnabled ? Colors.green : Colors.grey,
+              color: _notificationsEnabled
+                  ? colorScheme.primary
+                  : mutedIconColor,
             ),
             onChanged: (value) {
               setState(() {
                 _notificationsEnabled = value;
               });
             },
-          ),
-          const Divider(height: 1),
-
-          // Appearance Settings Section
-          _buildSectionHeader('Appearance'),
-          ListTile(
-            leading: const Icon(Icons.brightness_6),
-            title: const Text('Theme Mode'),
-            subtitle: Text(_getThemeModeText()),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _showThemeModeDialog,
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: themeProvider.primaryColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            title: const Text('Accent Color'),
-            subtitle: Text(availableColors[themeProvider.colorIndex].name),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _showColorPickerDialog,
+            activeColor: colorScheme.primary,
           ),
           const Divider(height: 1),
 
@@ -208,7 +188,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            leading: Icon(Icons.delete_outline, color: colorScheme.error),
             title: const Text('Clear Scan History'),
             subtitle: const Text('Remove all scan records'),
             trailing: const Icon(Icons.chevron_right),
@@ -261,134 +241,6 @@ class _SettingsPageState extends State<SettingsPage> {
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.primary,
         ),
-      ),
-    );
-  }
-
-  String _getThemeModeText() {
-    switch (themeProvider.themeMode) {
-      case AppThemeMode.light:
-        return 'Light';
-      case AppThemeMode.dark:
-        return 'Dark';
-      case AppThemeMode.system:
-        return 'System Default';
-    }
-  }
-
-  Future<void> _showThemeModeDialog() async {
-    final currentMode = themeProvider.themeMode;
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Theme Mode'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<AppThemeMode>(
-              value: AppThemeMode.system,
-              groupValue: currentMode,
-              title: const Text('System Default'),
-              subtitle: const Text('Follow device settings'),
-              onChanged: (value) {
-                themeProvider.setThemeMode(AppThemeMode.system);
-                Navigator.of(context).pop();
-                setState(() {});
-              },
-            ),
-            RadioListTile<AppThemeMode>(
-              value: AppThemeMode.light,
-              groupValue: currentMode,
-              title: const Text('Light'),
-              subtitle: const Text('Always use light theme'),
-              onChanged: (value) {
-                themeProvider.setThemeMode(AppThemeMode.light);
-                Navigator.of(context).pop();
-                setState(() {});
-              },
-            ),
-            RadioListTile<AppThemeMode>(
-              value: AppThemeMode.dark,
-              groupValue: currentMode,
-              title: const Text('Dark'),
-              subtitle: const Text('Always use dark theme'),
-              onChanged: (value) {
-                themeProvider.setThemeMode(AppThemeMode.dark);
-                Navigator.of(context).pop();
-                setState(() {});
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showColorPickerDialog() async {
-    final currentIndex = themeProvider.colorIndex;
-
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Accent Color'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: GridView.builder(
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemCount: availableColors.length,
-            itemBuilder: (context, index) {
-              final colorOption = availableColors[index];
-              final isSelected = index == currentIndex;
-
-              return GestureDetector(
-                onTap: () {
-                  themeProvider.setColorIndex(index);
-                  Navigator.of(context).pop();
-                  setState(() {});
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorOption.color,
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? Border.all(color: Colors.white, width: 3)
-                        : null,
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: colorOption.color.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: isSelected
-                      ? const Icon(Icons.check, color: Colors.white, size: 20)
-                      : null,
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
       ),
     );
   }
@@ -464,71 +316,98 @@ class _SettingsPageState extends State<SettingsPage> {
     final status = networkService.currentStatus;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Network Speed Test'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSpeedRow('Connection', status.connectionType),
-            const SizedBox(height: 8),
-            _buildSpeedRow('Download', status.formattedDownloadSpeed),
-            const SizedBox(height: 8),
-            _buildSpeedRow('Upload', status.formattedUploadSpeed),
-            const SizedBox(height: 8),
-            _buildSpeedRow('Latency', status.formattedLatency),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _getSpeedColor(status.downloadSpeed).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+
+        return AlertDialog(
+          title: const Text('Network Speed Test'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSpeedRow(context, 'Connection', status.connectionType),
+              const SizedBox(height: 8),
+              _buildSpeedRow(
+                context,
+                'Download',
+                status.formattedDownloadSpeed,
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.speed,
-                    color: _getSpeedColor(status.downloadSpeed),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Quality: ${status.speedDescription}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _getSpeedColor(status.downloadSpeed),
+              const SizedBox(height: 8),
+              _buildSpeedRow(context, 'Upload', status.formattedUploadSpeed),
+              const SizedBox(height: 8),
+              _buildSpeedRow(context, 'Latency', status.formattedLatency),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getSpeedColor(
+                    colorScheme,
+                    status.downloadSpeed,
+                  ).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.speed,
+                      color: _getSpeedColor(colorScheme, status.downloadSpeed),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      'Quality: ${status.speedDescription}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _getSpeedColor(
+                          colorScheme,
+                          status.downloadSpeed,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSpeedRow(String label, String value) {
+  Widget _buildSpeedRow(BuildContext context, String label, String value) {
+    final textTheme = Theme.of(context).textTheme;
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style:
+              textTheme.bodyMedium?.copyWith(color: mutedColor) ??
+              TextStyle(color: mutedColor),
+        ),
+        Text(
+          value,
+          style:
+              textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold) ??
+              const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
 
-  Color _getSpeedColor(double? speed) {
-    if (speed == null) return Colors.grey;
-    if (speed >= 25) return Colors.green;
-    if (speed >= 10) return Colors.lightGreen;
-    if (speed >= 1) return Colors.orange;
-    return Colors.red;
+  Color _getSpeedColor(ColorScheme colorScheme, double? speed) {
+    if (speed == null) return colorScheme.onSurfaceVariant;
+    if (speed >= 25) return colorScheme.primary;
+    if (speed >= 10) return colorScheme.secondary;
+    if (speed >= 1) return colorScheme.tertiary;
+    return colorScheme.error;
   }
 
   Future<void> _viewScanLogs() async {
@@ -570,32 +449,39 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not read logs: $e')));
+      final colorScheme = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not read logs: $e'),
+          backgroundColor: colorScheme.error,
+        ),
+      );
     }
   }
 
   Future<void> _confirmClearHistory() async {
     final shouldClear = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Scan History?'),
-        content: const Text(
-          'This will permanently delete all scan history and logs. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return AlertDialog(
+          title: const Text('Clear Scan History?'),
+          content: const Text(
+            'This will permanently delete all scan history and logs. This action cannot be undone.',
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+              child: const Text('Clear'),
+            ),
+          ],
+        );
+      },
     );
 
     if (shouldClear == true) {
@@ -615,17 +501,22 @@ class _SettingsPageState extends State<SettingsPage> {
         }
 
         if (!mounted) return;
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Scan history cleared'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Scan history cleared'),
+            backgroundColor: colorScheme.primary,
           ),
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error clearing history: $e')));
+        final colorScheme = Theme.of(context).colorScheme;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing history: $e'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
       }
     }
   }
@@ -665,17 +556,22 @@ class _SettingsPageState extends State<SettingsPage> {
         }
 
         if (!mounted) return;
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cache cleared successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Cache cleared successfully'),
+            backgroundColor: colorScheme.primary,
           ),
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error clearing cache: $e')));
+        final colorScheme = Theme.of(context).colorScheme;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing cache: $e'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
       }
     }
   }

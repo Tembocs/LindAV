@@ -43,20 +43,26 @@ class ThreatInfo {
     detectedAt: DateTime.parse(json['detectedAt'] as String),
   );
 
-  Color get severityColor {
-    switch (severity.toLowerCase()) {
+  static Color severityColorFor(String severity, ColorScheme colorScheme) {
+    final normalized = severity.toLowerCase();
+    final baseError = colorScheme.error;
+
+    switch (normalized) {
       case 'critical':
-        return Colors.red;
+        return baseError;
       case 'high':
-        return Colors.orange;
+        return Color.lerp(baseError, colorScheme.primary, 0.35) ?? baseError;
       case 'medium':
-        return Colors.amber;
+        return colorScheme.secondary;
       case 'low':
-        return Colors.yellow.shade700;
+        return colorScheme.tertiary;
       default:
-        return Colors.grey;
+        return colorScheme.outline;
     }
   }
+
+  Color severityColor(ColorScheme colorScheme) =>
+      severityColorFor(severity, colorScheme);
 
   IconData get threatIcon {
     switch (threatType.toLowerCase()) {
@@ -123,28 +129,28 @@ class ThreatDetailsPage extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            color: Colors.red.shade50,
+            color: colorScheme.errorContainer,
             child: Column(
               children: [
                 Icon(
                   Icons.warning_amber_rounded,
                   size: 48,
-                  color: Colors.red.shade700,
+                  color: colorScheme.error,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${threats.length} Threat${threats.length == 1 ? '' : 's'} Detected',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.red.shade700,
+                    color: colorScheme.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$scanType • $totalFilesScanned files scanned',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.red.shade600),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _buildSeveritySummary(context),
@@ -184,8 +190,8 @@ class ThreatDetailsPage extends StatelessWidget {
                     icon: const Icon(Icons.delete_forever),
                     label: const Text('Delete All'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: colorScheme.error,
+                      foregroundColor: colorScheme.onError,
                     ),
                   ),
                 ),
@@ -203,17 +209,31 @@ class ThreatDetailsPage extends StatelessWidget {
     final mediumCount = threats.where((t) => t.severity == 'Medium').length;
     final lowCount = threats.where((t) => t.severity == 'Low').length;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (criticalCount > 0)
-          _SeverityChip(label: 'Critical: $criticalCount', color: Colors.red),
+          _SeverityChip(
+            label: 'Critical: $criticalCount',
+            color: ThreatInfo.severityColorFor('Critical', colorScheme),
+          ),
         if (highCount > 0)
-          _SeverityChip(label: 'High: $highCount', color: Colors.orange),
+          _SeverityChip(
+            label: 'High: $highCount',
+            color: ThreatInfo.severityColorFor('High', colorScheme),
+          ),
         if (mediumCount > 0)
-          _SeverityChip(label: 'Medium: $mediumCount', color: Colors.amber),
+          _SeverityChip(
+            label: 'Medium: $mediumCount',
+            color: ThreatInfo.severityColorFor('Medium', colorScheme),
+          ),
         if (lowCount > 0)
-          _SeverityChip(label: 'Low: $lowCount', color: Colors.yellow.shade700),
+          _SeverityChip(
+            label: 'Low: $lowCount',
+            color: ThreatInfo.severityColorFor('Low', colorScheme),
+          ),
       ],
     );
   }
@@ -239,6 +259,7 @@ class ThreatDetailsPage extends StatelessWidget {
   }
 
   void _shareReport(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final report = StringBuffer();
     report.writeln('=== Lindav Security Threat Report ===');
     report.writeln('Scan Type: $scanType');
@@ -259,14 +280,15 @@ class ThreatDetailsPage extends StatelessWidget {
 
     Clipboard.setData(ClipboardData(text: report.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Report copied to clipboard'),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: const Text('Report copied to clipboard'),
+        backgroundColor: colorScheme.primary,
       ),
     );
   }
 
   void _quarantineAll(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -281,6 +303,10 @@ class ThreatDetailsPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+            ),
             child: const Text('Quarantine'),
           ),
         ],
@@ -292,7 +318,7 @@ class ThreatDetailsPage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${threats.length} threat(s) quarantined successfully'),
-          backgroundColor: Colors.green,
+          backgroundColor: colorScheme.primary,
         ),
       );
       Navigator.of(context).pop();
@@ -300,6 +326,7 @@ class ThreatDetailsPage extends StatelessWidget {
   }
 
   void _deleteAll(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -315,8 +342,8 @@ class ThreatDetailsPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             child: const Text('Delete All'),
           ),
@@ -329,7 +356,7 @@ class ThreatDetailsPage extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${threats.length} threat(s) deleted successfully'),
-          backgroundColor: Colors.green,
+          backgroundColor: colorScheme.primary,
         ),
       );
       Navigator.of(context).pop();
@@ -345,6 +372,11 @@ class _SeverityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onChipColor =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -358,7 +390,7 @@ class _SeverityChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: color.computeLuminance() > 0.5 ? Colors.black87 : color,
+          color: onChipColor,
         ),
       ),
     );
@@ -373,6 +405,14 @@ class _ThreatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final severityColor = threat.severityColor(colorScheme);
+    final mutedColor = colorScheme.onSurfaceVariant;
+    final onSeverityColor =
+        ThemeData.estimateBrightnessForColor(severityColor) == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
@@ -386,14 +426,10 @@ class _ThreatCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: threat.severityColor.withOpacity(0.1),
+                  color: severityColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  threat.threatIcon,
-                  color: threat.severityColor,
-                  size: 24,
-                ),
+                child: Icon(threat.threatIcon, color: severityColor, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -410,7 +446,7 @@ class _ThreatCard extends StatelessWidget {
                     Text(
                       threat.threatType,
                       style: TextStyle(
-                        color: threat.severityColor,
+                        color: severityColor,
                         fontWeight: FontWeight.w500,
                         fontSize: 13,
                       ),
@@ -420,7 +456,7 @@ class _ThreatCard extends StatelessWidget {
                       threat.filePath,
                       style: Theme.of(
                         context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      ).textTheme.bodySmall?.copyWith(color: mutedColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -437,13 +473,13 @@ class _ThreatCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: threat.severityColor,
+                      color: severityColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       threat.severity,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: onSeverityColor,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -457,7 +493,7 @@ class _ThreatCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: mutedColor),
             ],
           ),
         ),
@@ -477,6 +513,14 @@ class _ThreatDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final severityColor = threat.severityColor(colorScheme);
+    // final mutedColor = colorScheme.onSurfaceVariant;
+    final onSeverityColor =
+        ThemeData.estimateBrightnessForColor(severityColor) == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+
     return SingleChildScrollView(
       controller: scrollController,
       padding: const EdgeInsets.all(16),
@@ -489,7 +533,7 @@ class _ThreatDetailSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -503,14 +547,10 @@ class _ThreatDetailSheet extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: threat.severityColor.withOpacity(0.1),
+                  color: severityColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  threat.threatIcon,
-                  color: threat.severityColor,
-                  size: 32,
-                ),
+                child: Icon(threat.threatIcon, color: severityColor, size: 32),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -530,13 +570,13 @@ class _ThreatDetailSheet extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: threat.severityColor,
+                        color: severityColor,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         '${threat.severity} Severity',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: onSeverityColor,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -612,8 +652,8 @@ class _ThreatDetailSheet extends StatelessWidget {
               icon: const Icon(Icons.delete_forever),
               label: const Text('Delete This Threat'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
               ),
             ),
           ),
@@ -624,6 +664,7 @@ class _ThreatDetailSheet extends StatelessWidget {
   }
 
   void _openFileLocation(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     // Get the directory path
     final directory = threat.filePath.substring(
       0,
@@ -635,22 +676,24 @@ class _ThreatDetailSheet extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Path copied: $directory'),
-        backgroundColor: Colors.blue,
+        backgroundColor: colorScheme.primary,
       ),
     );
   }
 
   void _quarantine(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File quarantined successfully'),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: const Text('File quarantined successfully'),
+        backgroundColor: colorScheme.primary,
       ),
     );
     Navigator.of(context).pop();
   }
 
   void _delete(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -666,8 +709,8 @@ class _ThreatDetailSheet extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             child: const Text('Delete'),
           ),
@@ -677,9 +720,9 @@ class _ThreatDetailSheet extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('File deleted successfully'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('File deleted successfully'),
+          backgroundColor: colorScheme.primary,
         ),
       );
       Navigator.of(context).pop();
@@ -700,6 +743,8 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -707,7 +752,7 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: TextStyle(color: Colors.grey[600])),
+            child: Text(label, style: TextStyle(color: mutedColor)),
           ),
           Expanded(
             child: Text(
