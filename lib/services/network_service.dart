@@ -94,9 +94,13 @@ class NetworkService {
 
   bool _isTestingSpeed = false;
   bool get isTestingSpeed => _isTestingSpeed;
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   /// Initialize the network service and start monitoring
   Future<void> initialize() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
     // Check initial connectivity
     await _checkConnectivity();
 
@@ -111,6 +115,7 @@ class NetworkService {
   /// Dispose the service
   void dispose() {
     _connectivitySubscription?.cancel();
+    _isInitialized = false;
     _statusController.close();
   }
 

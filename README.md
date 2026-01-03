@@ -6,6 +6,7 @@ It shows a simple security dashboard UI with:
 - A status card that shows whether a scan is running and the last result.
 - Buttons for **Quick Scan**, **Full Scan**, and **USB Scan**.
 - A scan history list with time, files scanned, and threats found.
+- checking the networking status.
 
 The current implementation simulates scans only (no real antivirus engine).
 

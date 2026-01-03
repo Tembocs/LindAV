@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'main.dart';
 import 'services/network_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -12,6 +13,7 @@ class SettingsPage extends StatefulWidget {
   final bool notificationsEnabled;
   final bool scanOnStartup;
   final String scanSchedule;
+  final ThemeMode themeMode;
 
   const SettingsPage({
     super.key,
@@ -21,6 +23,7 @@ class SettingsPage extends StatefulWidget {
     this.notificationsEnabled = true,
     this.scanOnStartup = false,
     this.scanSchedule = 'Never',
+    this.themeMode = ThemeMode.system,
   });
 
   @override
@@ -34,6 +37,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late bool _notificationsEnabled;
   late bool _scanOnStartup;
   late String _scanSchedule;
+  late ThemeMode _themeMode;
 
   final List<String> _scheduleOptions = ['Never', 'Daily', 'Weekly', 'Monthly'];
 
@@ -46,6 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _notificationsEnabled = widget.notificationsEnabled;
     _scanOnStartup = widget.scanOnStartup;
     _scanSchedule = widget.scanSchedule;
+    _themeMode = widget.themeMode;
   }
 
   @override
@@ -67,6 +72,32 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: ListView(
         children: [
+          _buildSectionHeader('Appearance'),
+          ListTile(
+            leading: const Icon(Icons.brightness_6_outlined),
+            title: const Text('Theme'),
+            subtitle: Text(_themeModeLabel(_themeMode)),
+            trailing: DropdownButton<ThemeMode>(
+              value: _themeMode,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _themeMode = value;
+                });
+                AppTheme.of(context).setThemeMode(value);
+              },
+              items: const [
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text('System default'),
+                ),
+                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
           // Protection Settings Section
           _buildSectionHeader('Protection Settings'),
           SwitchListTile(
@@ -245,6 +276,17 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  String _themeModeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'Light mode';
+      case ThemeMode.dark:
+        return 'Dark mode';
+      case ThemeMode.system:
+        return 'Follow system';
+    }
+  }
+
   void _saveSettings() {
     Navigator.of(context).pop(
       SettingsResult(
@@ -254,6 +296,7 @@ class _SettingsPageState extends State<SettingsPage> {
         notificationsEnabled: _notificationsEnabled,
         scanOnStartup: _scanOnStartup,
         scanSchedule: _scanSchedule,
+        themeMode: _themeMode,
       ),
     );
   }
@@ -646,6 +689,7 @@ class SettingsResult {
   final bool notificationsEnabled;
   final bool scanOnStartup;
   final String scanSchedule;
+  final ThemeMode themeMode;
 
   SettingsResult({
     required this.autoScanUsb,
@@ -654,5 +698,6 @@ class SettingsResult {
     required this.notificationsEnabled,
     required this.scanOnStartup,
     required this.scanSchedule,
+    required this.themeMode,
   });
 }
