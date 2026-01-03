@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'intro_page.dart';
+import 'theme_controller.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -13,6 +14,10 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      AppTheme.of(context).setThemeMode(ThemeMode.light);
+    });
     _goToHome();
   }
 

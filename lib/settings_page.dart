@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'main.dart';
 import 'services/network_service.dart';
+import 'theme_controller.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool autoScanUsb;
@@ -23,7 +23,7 @@ class SettingsPage extends StatefulWidget {
     this.notificationsEnabled = true,
     this.scanOnStartup = false,
     this.scanSchedule = 'Never',
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.light,
   });
 
   @override

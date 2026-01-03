@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'services/network_service.dart';
 import 'splash_page.dart';
+import 'theme_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +18,7 @@ class LindavSecurityApp extends StatefulWidget {
 }
 
 class _LindavSecurityAppState extends State<LindavSecurityApp> {
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
 
   void _setThemeMode(ThemeMode mode) {
     setState(() {
@@ -49,27 +50,4 @@ class _LindavSecurityAppState extends State<LindavSecurityApp> {
       ),
     );
   }
-}
-
-class AppTheme extends InheritedWidget {
-  const AppTheme({
-    super.key,
-    required super.child,
-    required this.themeMode,
-    required this.setThemeMode,
-  });
-
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> setThemeMode;
-
-  static AppTheme of(BuildContext context) {
-    final AppTheme? result = context
-        .dependOnInheritedWidgetOfExactType<AppTheme>();
-    assert(result != null, 'AppTheme is not available in the current context');
-    return result!;
-  }
-
-  @override
-  bool updateShouldNotify(AppTheme oldWidget) =>
-      themeMode != oldWidget.themeMode;
 }
