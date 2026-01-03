@@ -47,6 +47,8 @@ class IntroPage extends StatelessWidget {
               Expanded(
                 child: ListView(
                   children: [
+                    // _BrandHero(colorScheme: colorScheme),
+                    const SizedBox(height: 24),
                     _IntroTile(
                       icon: Icons.shield,
                       title: 'Start Scanning',
@@ -175,3 +177,49 @@ class _IntroTile extends StatelessWidget {
     );
   }
 }
+
+// class _BrandHero extends StatelessWidget {
+//   const _BrandHero({required this.colorScheme});
+
+//   final ColorScheme colorScheme;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.all(24),
+//       decoration: BoxDecoration(
+//         color: colorScheme.surfaceVariant,
+//         borderRadius: BorderRadius.circular(20),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.center,
+//         children: [
+//           ClipRRect(
+//             borderRadius: BorderRadius.circular(16),
+//             child: Image.asset(
+//               'assets/logo.png',
+//               height: 140,
+//               fit: BoxFit.cover,
+//             ),
+//           ),
+//           const SizedBox(height: 16),
+//           Text(
+//             'JERMAN TECHNOLOGY',
+//             style: Theme.of(
+//               context,
+//             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+//             textAlign: TextAlign.center,
+//           ),
+//           const SizedBox(height: 6),
+//           Text(
+//             'Technology with purpose, powering secure experiences.',
+//             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+//               color: colorScheme.onSurfaceVariant,
+//             ),
+//             textAlign: TextAlign.center,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
