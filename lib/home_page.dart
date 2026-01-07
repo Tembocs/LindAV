@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'intro_page.dart';
 import 'network_status_page.dart';
 import 'scan_page.dart';
 import 'tests_page.dart';
@@ -15,6 +16,15 @@ class HomePage extends StatelessWidget {
         title: const Text('Lindav Security'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Back to Intro',
+            onPressed: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const IntroPage()),
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'network_status_page.dart';
 import 'scan_page.dart';
+import 'splash_page.dart';
 import 'tests_page.dart';
 
 class IntroPage extends StatelessWidget {
@@ -57,39 +58,75 @@ class IntroPage extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 4),
-                          // Skip button
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: TextButton.icon(
-                              onPressed: () =>
-                                  Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(
-                                      builder: (_) => const HomePage(),
+                          // Top buttons row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // Restart button
+                              TextButton.icon(
+                                onPressed: () =>
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                        builder: (_) => const SplashPage(),
+                                      ),
+                                      (route) => false,
                                     ),
-                                  ),
-                              icon: const Icon(
-                                Icons.exit_to_app,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              label: const Text(
-                                'Skip',
-                                style: TextStyle(
+                                icon: const Icon(
+                                  Icons.restart_alt,
                                   color: Colors.white,
-                                  fontSize: 13,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Restart',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.white.withAlpha(30),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
                                 ),
                               ),
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.white.withAlpha(30),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                              const SizedBox(width: 8),
+                              // Skip button
+                              TextButton.icon(
+                                onPressed: () =>
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (_) => const HomePage(),
+                                      ),
+                                    ),
+                                icon: const Icon(
+                                  Icons.exit_to_app,
+                                  color: Colors.white,
+                                  size: 18,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
+                                label: const Text(
+                                  'Skip',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.white.withAlpha(30),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           // Logo/Icon

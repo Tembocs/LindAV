@@ -31,55 +31,93 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      backgroundColor: colorScheme.primary,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: colorScheme.onPrimary,
-                shape: BoxShape.circle,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/icon.png',
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.cover,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF059669), // Emerald
+              Color(0xFF10B981), // Green
+              Color(0xFF14B8A6), // Teal
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(30),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icon.png',
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Lindav Security',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 24),
+              const Text(
+                'LindAV',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Protecting your device...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onPrimary.withOpacity(0.8),
+              const SizedBox(height: 4),
+              Text(
+                'Security Suite',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withAlpha(200),
+                  letterSpacing: 1,
+                ),
               ),
-            ),
-            Text(
-              'Made by JERMAN COMPANY LIMITED',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimary.withOpacity(0.7),
+              const SizedBox(height: 8),
+              Text(
+                'Protecting your device...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withAlpha(180),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
-            ),
-          ],
+              const SizedBox(height: 32),
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 48),
+              Text(
+                'JERMAN TECHNOLOGY',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withAlpha(150),
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
