@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class TestsPage extends StatefulWidget {
   const TestsPage({super.key});
@@ -7,7 +8,13 @@ class TestsPage extends StatefulWidget {
   State<TestsPage> createState() => _TestsPageState();
 }
 
-class _TestsPageState extends State<TestsPage> {
+class _TestsPageState extends State<TestsPage> with TickerProviderStateMixin {
+  // Loading states
+  bool _isLoggingOutDevices = false;
+  bool _isExportingData = false;
+  bool _isDeletingAccount = false;
+  bool _isSavingSettings = false;
+
   final Map<String, bool> _twoFactorMethods = {
     'SMS': true,
     'Authenticator app': true,
@@ -28,25 +35,34 @@ class _TestsPageState extends State<TestsPage> {
     'Storage': 'Allows encrypted export and offline access to reports.',
   };
 
-  final List<_DeviceSession> _sessions = const [
-    _DeviceSession(
+  List<_DeviceSession> _sessions = [
+    const _DeviceSession(
+      id: '1',
       name: 'Pixel 8 Pro',
       location: 'San Francisco, US',
       lastActive: 'Active now',
       isCurrent: true,
     ),
-    _DeviceSession(
+    const _DeviceSession(
+      id: '2',
       name: 'iPad Air',
       location: 'Austin, US',
       lastActive: '1 hour ago',
       isCurrent: false,
     ),
-    _DeviceSession(
+    const _DeviceSession(
+      id: '3',
       name: 'Web Login · Edge',
       location: 'New York, US',
       lastActive: 'Yesterday',
       isCurrent: false,
     ),
+  ];
+
+  // Emergency contacts
+  final List<_EmergencyContact> _emergencyContacts = [
+    const _EmergencyContact(name: 'Security Desk', phone: '+1 555-0100'),
+    const _EmergencyContact(name: 'On-Call Supervisor', phone: '+1 555-0101'),
   ];
 
   bool _loginAlertsEnabled = true;
@@ -60,6 +76,93 @@ class _TestsPageState extends State<TestsPage> {
   bool _dataAccessLogEnabled = false;
   bool _secureBackupEnabled = true;
 
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Future<bool> _showConfirmDialog({
+    required String title,
+    required String message,
+    String confirmText = 'Confirm',
+    bool isDestructive = false,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: isDestructive
+                ? TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  )
+                : null,
+            child: Text(confirmText),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _saveSettingWithFeedback(String settingName) async {
+    setState(() => _isSavingSettings = true);
+    // Simulate save delay
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() => _isSavingSettings = false);
+    _showSnackBar('$settingName updated');
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const _ChangePasswordDialog(),
+    ).then((success) {
+      if (success == true) {
+        _showSnackBar('Password changed successfully');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -69,83 +172,102 @@ class _TestsPageState extends State<TestsPage> {
         title: const Text('Security Center'),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _SectionCard(
-            title: 'Account Security',
-            subtitle: 'Keep accounts protected and recoverable.',
-            children: [
-              _buildChangePasswordTile(),
-              _buildTwoFactorTile(),
-              _buildRecoveryOptionsTile(),
-              _buildLoginAlertsTile(),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionCard(
-            title: 'Devices & Sessions',
-            subtitle:
-                'Control where you are signed in and how long sessions last.',
-            children: [
-              _buildActiveSessionsTile(),
-              _buildLogoutOtherDevicesTile(),
-              _buildRememberedDevicesTile(),
-              _buildSessionTimeoutTile(),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionCard(
-            title: 'Privacy & App Lock',
-            subtitle:
-                'Protect data on this device even when the app is running.',
-            children: [
-              _buildAppLockTile(),
-              _buildHideNotificationsTile(),
-              _buildScreenshotProtectionTile(),
-              _buildClipboardProtectionTile(),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionCard(
-            title: 'Permissions',
-            subtitle: 'Grant only what is necessary and monitor access.',
-            children: [
-              _buildPermissionsDashboardTile(),
-              _buildPermissionToggles(),
-              _buildDataAccessLogTile(),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionCard(
-            title: 'Data & Recovery',
-            subtitle:
-                'Understand how your information is secured, backed up, and retained.',
-            children: [
-              _buildEncryptionStatusTile(),
-              _buildBackupRestoreTile(),
-              _buildDownloadDataTile(),
-              _buildDeleteAccountTile(),
-              _buildIncidentReportingTile(),
-              _buildEvidenceHandlingTile(),
-              _buildAuditTrailTile(),
-              _buildEmergencyContactsTile(),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionCard(
-            title: 'Help / Legal',
-            subtitle: 'Find guidance, report concerns, and review policies.',
-            children: [
-              _buildSecurityTipsTile(),
-              _buildReportIssueTile(),
-              _buildPolicyLinksTile(),
-              _buildVersionInfoTile(),
-            ],
-          ),
-          const SizedBox(height: 32),
+        actions: [
+          if (_isSavingSettings)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
         ],
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            _SectionCard(
+              title: 'Account Security',
+              subtitle: 'Keep accounts protected and recoverable.',
+              children: [
+                _buildChangePasswordTile(),
+                _buildTwoFactorTile(),
+                _buildRecoveryOptionsTile(),
+                _buildLoginAlertsTile(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _SectionCard(
+              title: 'Devices & Sessions',
+              subtitle:
+                  'Control where you are signed in and how long sessions last.',
+              children: [
+                _buildActiveSessionsTile(),
+                _buildLogoutOtherDevicesTile(),
+                _buildRememberedDevicesTile(),
+                _buildSessionTimeoutTile(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _SectionCard(
+              title: 'Privacy & App Lock',
+              subtitle:
+                  'Protect data on this device even when the app is running.',
+              children: [
+                _buildAppLockTile(),
+                _buildHideNotificationsTile(),
+                _buildScreenshotProtectionTile(),
+                _buildClipboardProtectionTile(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _SectionCard(
+              title: 'Permissions',
+              subtitle: 'Grant only what is necessary and monitor access.',
+              children: [
+                _buildPermissionsDashboardTile(),
+                _buildPermissionToggles(),
+                _buildDataAccessLogTile(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _SectionCard(
+              title: 'Data & Recovery',
+              subtitle:
+                  'Understand how your information is secured, backed up, and retained.',
+              children: [
+                _buildEncryptionStatusTile(),
+                _buildBackupRestoreTile(),
+                _buildDownloadDataTile(),
+                _buildDeleteAccountTile(),
+                _buildIncidentReportingTile(),
+                _buildEvidenceHandlingTile(),
+                _buildAuditTrailTile(),
+                _buildEmergencyContactsTile(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _SectionCard(
+              title: 'Help / Legal',
+              subtitle: 'Find guidance, report concerns, and review policies.',
+              children: [
+                _buildSecurityTipsTile(),
+                _buildReportIssueTile(),
+                _buildPolicyLinksTile(),
+                _buildVersionInfoTile(),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
@@ -162,10 +284,7 @@ class _TestsPageState extends State<TestsPage> {
             'Update regularly and use unique passphrases with numbers, symbols, and mixed case.',
           ),
           trailing: OutlinedButton(
-            onPressed: () => _showInfoDialog(
-              'Password guidance',
-              'Use at least 12 characters, include numbers and symbols, avoid dictionary words, and never reuse credentials across services.',
-            ),
+            onPressed: _showChangePasswordDialog,
             child: const Text('Update'),
           ),
         ),
@@ -267,52 +386,174 @@ class _TestsPageState extends State<TestsPage> {
           contentPadding: EdgeInsets.zero,
           leading: const _IconBadge(icon: Icons.devices_outlined),
           title: const Text('Active sessions'),
-          subtitle: const Text('Review devices currently signed in.'),
+          subtitle: Text('${_sessions.length} device(s) currently signed in.'),
         ),
         const SizedBox(height: 12),
-        Column(
-          children: _sessions
-              .map(
-                (session) => _SessionTile(
-                  session: session,
-                  onTap: () {
-                    if (!session.isCurrent) {
-                      _showInfoDialog(
-                        'Session details',
-                        '${session.name}\nLocation: ${session.location}\nLast active: ${session.lastActive}',
-                      );
-                    }
-                  },
-                  theme: theme,
-                ),
-              )
-              .toList(),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Column(
+            key: ValueKey(_sessions.length),
+            children: _sessions
+                .map(
+                  (session) => _SessionTile(
+                    session: session,
+                    onTap: () => _showSessionOptions(session),
+                    onRemove: session.isCurrent
+                        ? null
+                        : () => _removeSession(session),
+                    theme: theme,
+                  ),
+                )
+                .toList(),
+          ),
         ),
       ],
     );
   }
 
+  Future<void> _removeSession(_DeviceSession session) async {
+    final confirmed = await _showConfirmDialog(
+      title: 'End session?',
+      message: 'This will sign out "${session.name}" immediately.',
+      confirmText: 'Sign out',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+
+    setState(() {
+      _sessions = _sessions.where((s) => s.id != session.id).toList();
+    });
+    _showSnackBar('Session ended for ${session.name}');
+  }
+
+  void _showSessionOptions(_DeviceSession session) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  session.isCurrent ? Icons.phone_android : Icons.devices_other,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        session.name,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(session.location),
+                    ],
+                  ),
+                ),
+                if (session.isCurrent)
+                  Chip(
+                    label: const Text('Current'),
+                    backgroundColor: _tintColor(
+                      Theme.of(context).colorScheme.primary,
+                      0.12,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Last active'),
+              subtitle: Text(session.lastActive),
+            ),
+            ListTile(
+              leading: const Icon(Icons.location_on_outlined),
+              title: const Text('Location'),
+              subtitle: Text(session.location),
+            ),
+            if (!session.isCurrent) ...[
+              const Divider(),
+              ListTile(
+                leading: Icon(
+                  Icons.logout,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  'End this session',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _removeSession(session);
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoutOtherDevicesTile() {
+    final otherSessionsCount = _sessions.where((s) => !s.isCurrent).length;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const _IconBadge(icon: Icons.logout),
       title: const Text('Log out of other devices'),
-      subtitle: const Text('Force sign-out everywhere except this device.'),
-      trailing: ElevatedButton(
-        onPressed: () => _showInfoDialog(
-          'Log out other devices',
-          'All sessions except the current one will be terminated. Use this after losing a device or noticing unfamiliar activity.',
-        ),
-        child: const Text('Log out'),
+      subtitle: Text(
+        otherSessionsCount > 0
+            ? 'Force sign-out from $otherSessionsCount other device(s).'
+            : 'No other active sessions.',
       ),
+      trailing: _isLoggingOutDevices
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : ElevatedButton(
+              onPressed: otherSessionsCount > 0 ? _logoutOtherDevices : null,
+              child: const Text('Log out'),
+            ),
     );
+  }
+
+  Future<void> _logoutOtherDevices() async {
+    final confirmed = await _showConfirmDialog(
+      title: 'Log out other devices?',
+      message:
+          'All sessions except the current one will be terminated. Use this after losing a device or noticing unfamiliar activity.',
+      confirmText: 'Log out all',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+
+    setState(() => _isLoggingOutDevices = true);
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      _sessions = _sessions.where((s) => s.isCurrent).toList();
+      _isLoggingOutDevices = false;
+    });
+    _showSnackBar('All other sessions have been terminated');
   }
 
   Widget _buildRememberedDevicesTile() {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _rememberDevices,
-      onChanged: (value) => setState(() => _rememberDevices = value),
+      onChanged: (value) async {
+        setState(() => _rememberDevices = value);
+        await _saveSettingWithFeedback('Remembered devices');
+      },
       title: const Text('Remembered devices'),
       subtitle: const Text('Manage trusted devices that bypass MFA prompts.'),
       secondary: const _IconBadge(icon: Icons.verified_outlined),
@@ -339,9 +580,10 @@ class _TestsPageState extends State<TestsPage> {
                 ),
               )
               .toList(),
-          onChanged: (value) {
+          onChanged: (value) async {
             if (value == null) return;
             setState(() => _sessionTimeout = value);
+            await _saveSettingWithFeedback('Session timeout');
           },
         ),
       ),
@@ -355,7 +597,10 @@ class _TestsPageState extends State<TestsPage> {
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
           value: _appLockEnabled,
-          onChanged: (value) => setState(() => _appLockEnabled = value),
+          onChanged: (value) async {
+            setState(() => _appLockEnabled = value);
+            await _saveSettingWithFeedback('App lock');
+          },
           title: const Text('App lock'),
           subtitle: const Text(
             'Require local authentication when opening the app.',
@@ -378,9 +623,10 @@ class _TestsPageState extends State<TestsPage> {
                             ),
                           )
                           .toList(),
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         if (value == null) return;
                         setState(() => _appLockMethod = value);
+                        await _saveSettingWithFeedback('Lock method');
                       },
                     ),
                   ),
@@ -395,7 +641,10 @@ class _TestsPageState extends State<TestsPage> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _hideNotificationContent,
-      onChanged: (value) => setState(() => _hideNotificationContent = value),
+      onChanged: (value) async {
+        setState(() => _hideNotificationContent = value);
+        await _saveSettingWithFeedback('Notification privacy');
+      },
       title: const Text('Hide sensitive notification content'),
       subtitle: const Text(
         'Show generic alerts only; reveal details after unlocking.',
@@ -408,7 +657,10 @@ class _TestsPageState extends State<TestsPage> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _screenshotProtection,
-      onChanged: (value) => setState(() => _screenshotProtection = value),
+      onChanged: (value) async {
+        setState(() => _screenshotProtection = value);
+        await _saveSettingWithFeedback('Screenshot protection');
+      },
       title: const Text('Screenshot protection'),
       subtitle: const Text(
         'Block screenshots on sensitive views where supported.',
@@ -421,7 +673,10 @@ class _TestsPageState extends State<TestsPage> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _clipboardProtection,
-      onChanged: (value) => setState(() => _clipboardProtection = value),
+      onChanged: (value) async {
+        setState(() => _clipboardProtection = value);
+        await _saveSettingWithFeedback('Clipboard protection');
+      },
       title: const Text('Clipboard protection'),
       subtitle: const Text(
         'Automatically clear copied secrets after a short delay.',
@@ -439,13 +694,15 @@ class _TestsPageState extends State<TestsPage> {
         'Review why each permission is requested and revoke unused ones.',
       ),
       trailing: OutlinedButton(
-        onPressed: () => _showInfoDialog(
-          'Permissions dashboard',
-          'Opening the dashboard lists every permission with usage frequency and shortcuts to revoke access.',
-        ),
+        onPressed: _openAppSettings,
         child: const Text('Open'),
       ),
     );
+  }
+
+  void _openAppSettings() {
+    _showSnackBar('Opening system app settings...');
+    // In production, use: AppSettings.openAppSettings() from app_settings package
   }
 
   Widget _buildPermissionToggles() {
@@ -458,10 +715,11 @@ class _TestsPageState extends State<TestsPage> {
           subtitle: Text(description),
           trailing: Switch.adaptive(
             value: entry.value,
-            onChanged: (value) {
+            onChanged: (value) async {
               setState(() {
                 _permissions[entry.key] = value;
               });
+              await _saveSettingWithFeedback('${entry.key} permission');
             },
           ),
         );
@@ -473,7 +731,10 @@ class _TestsPageState extends State<TestsPage> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _dataAccessLogEnabled,
-      onChanged: (value) => setState(() => _dataAccessLogEnabled = value),
+      onChanged: (value) async {
+        setState(() => _dataAccessLogEnabled = value);
+        await _saveSettingWithFeedback('Data access log');
+      },
       title: const Text('Data access log'),
       subtitle: const Text(
         'Keep a detailed log of camera, location, and microphone usage (advanced).',
@@ -502,7 +763,10 @@ class _TestsPageState extends State<TestsPage> {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       value: _secureBackupEnabled,
-      onChanged: (value) => setState(() => _secureBackupEnabled = value),
+      onChanged: (value) async {
+        setState(() => _secureBackupEnabled = value);
+        await _saveSettingWithFeedback('Secure backup');
+      },
       title: const Text('Secure backup & restore'),
       subtitle: const Text(
         'Store encrypted backups; warn if exporting to an unencrypted location.',
@@ -517,13 +781,30 @@ class _TestsPageState extends State<TestsPage> {
       leading: const _IconBadge(icon: Icons.download_outlined),
       title: const Text('Download my data'),
       subtitle: const Text('Export an encrypted archive of your account data.'),
-      trailing: OutlinedButton(
-        onPressed: () => _showInfoDialog(
-          'Download data',
+      trailing: _isExportingData
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : OutlinedButton(onPressed: _exportData, child: const Text('Export')),
+    );
+  }
+
+  Future<void> _exportData() async {
+    final confirmed = await _showConfirmDialog(
+      title: 'Export your data?',
+      message:
           'A secure ZIP will be prepared. You will receive a download link that expires after 24 hours.',
-        ),
-        child: const Text('Export'),
-      ),
+      confirmText: 'Export',
+    );
+    if (!confirmed) return;
+
+    setState(() => _isExportingData = true);
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isExportingData = false);
+    _showSnackBar(
+      'Export started. You will receive a notification when ready.',
     );
   }
 
@@ -535,16 +816,46 @@ class _TestsPageState extends State<TestsPage> {
       subtitle: const Text(
         'Request permanent deletion of your data in accordance with policy.',
       ),
-      trailing: TextButton(
-        onPressed: () => _showInfoDialog(
-          'Delete account',
-          'Deletion is irreversible after 30 days. Evidence linked to legal cases may be retained per policy.',
-        ),
-        style: TextButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.error,
-        ),
-        child: const Text('Request'),
-      ),
+      trailing: _isDeletingAccount
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : TextButton(
+              onPressed: _requestAccountDeletion,
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Request'),
+            ),
+    );
+  }
+
+  Future<void> _requestAccountDeletion() async {
+    final confirmed = await _showConfirmDialog(
+      title: 'Delete your account?',
+      message:
+          'This action is irreversible after 30 days. All your data will be permanently deleted. Evidence linked to legal cases may be retained per policy.',
+      confirmText: 'Delete Account',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+
+    // Second confirmation
+    final doubleConfirmed = await _showConfirmDialog(
+      title: 'Are you absolutely sure?',
+      message: 'Type "DELETE" to confirm. This cannot be undone.',
+      confirmText: 'Yes, delete my account',
+      isDestructive: true,
+    );
+    if (!doubleConfirmed) return;
+
+    setState(() => _isDeletingAccount = true);
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() => _isDeletingAccount = false);
+    _showSnackBar(
+      'Account deletion requested. Check your email for confirmation.',
     );
   }
 
@@ -612,19 +923,127 @@ class _TestsPageState extends State<TestsPage> {
   }
 
   Widget _buildEmergencyContactsTile() {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const _IconBadge(icon: Icons.sos_outlined),
-      title: const Text('Emergency contacts / SOS'),
-      subtitle: const Text(
-        'Configure direct lines, escalation paths, and panic alerts.',
-      ),
-      trailing: OutlinedButton(
-        onPressed: () => _showInfoDialog(
-          'Emergency contacts',
-          'Add on-call supervisors and emergency services. SOS alerts share location and recent incident context.',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const _IconBadge(icon: Icons.sos_outlined),
+          title: const Text('Emergency contacts / SOS'),
+          subtitle: const Text(
+            'Configure direct lines, escalation paths, and panic alerts.',
+          ),
+          trailing: OutlinedButton(
+            onPressed: _showEmergencyContactsSheet,
+            child: const Text('Manage'),
+          ),
         ),
-        child: const Text('Manage'),
+        const SizedBox(height: 12),
+        if (_emergencyContacts.isNotEmpty)
+          ...(_emergencyContacts.map(
+            (contact) => Padding(
+              padding: const EdgeInsets.only(left: 56, bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          contact.name,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        Text(
+                          contact.phone,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.call, size: 20),
+                    onPressed: () =>
+                        _showSnackBar('Calling ${contact.name}...'),
+                  ),
+                ],
+              ),
+            ),
+          )),
+      ],
+    );
+  }
+
+  void _showEmergencyContactsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Emergency Contacts',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add on-call supervisors and emergency services. SOS alerts share location and recent incident context.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            ..._emergencyContacts.map(
+              (contact) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(contact.name),
+                subtitle: Text(contact.phone),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.call),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showSnackBar('Calling ${contact.name}...');
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showSnackBar('Edit contact (not implemented)');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showSnackBar('Add contact (not implemented)');
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add emergency contact'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -636,11 +1055,109 @@ class _TestsPageState extends State<TestsPage> {
       title: const Text('Security tips'),
       subtitle: const Text('Short, practical guidance for daily operations.'),
       trailing: OutlinedButton(
-        onPressed: () => _showInfoDialog(
-          'Security tips',
-          '• Verify identities before sharing sensitive data.\n• Lock devices when unattended.\n• Report suspicious activity immediately.\n• Update software as soon as patches are available.',
-        ),
+        onPressed: _showSecurityTipsSheet,
         child: const Text('View'),
+      ),
+    );
+  }
+
+  void _showSecurityTipsSheet() {
+    final tips = [
+      _SecurityTip(
+        icon: Icons.verified_user,
+        title: 'Verify identities',
+        description: 'Always confirm who you are sharing sensitive data with.',
+      ),
+      _SecurityTip(
+        icon: Icons.lock,
+        title: 'Lock devices',
+        description: 'Never leave devices unattended without locking them.',
+      ),
+      _SecurityTip(
+        icon: Icons.report_problem,
+        title: 'Report suspicious activity',
+        description: 'If something seems off, report it immediately.',
+      ),
+      _SecurityTip(
+        icon: Icons.system_update,
+        title: 'Keep software updated',
+        description: 'Install security patches as soon as they are available.',
+      ),
+      _SecurityTip(
+        icon: Icons.wifi_lock,
+        title: 'Use secure networks',
+        description: 'Avoid public Wi-Fi for sensitive operations.',
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Security Tips',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: tips.length,
+                separatorBuilder: (context, index) => const Divider(height: 24),
+                itemBuilder: (context, index) {
+                  final tip = tips[index];
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        tip.icon,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tip.title,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              tip.description,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -654,11 +1171,65 @@ class _TestsPageState extends State<TestsPage> {
         'Contact the security team with vulnerabilities or concerns.',
       ),
       trailing: OutlinedButton(
-        onPressed: () => _showInfoDialog(
-          'Report a security issue',
-          'Email security@lindav.app or submit via the in-app incident form. Include reproduction steps and screenshots if possible.',
-        ),
+        onPressed: _showReportIssueSheet,
         child: const Text('Contact'),
+      ),
+    );
+  }
+
+  void _showReportIssueSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Report a Security Issue',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.email_outlined),
+              title: const Text('Email'),
+              subtitle: const Text('security@lindav.app'),
+              onTap: () {
+                Navigator.pop(context);
+                Clipboard.setData(
+                  const ClipboardData(text: 'security@lindav.app'),
+                );
+                _showSnackBar('Email copied to clipboard');
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('In-app form'),
+              subtitle: const Text('Submit with reproduction steps'),
+              onTap: () {
+                Navigator.pop(context);
+                _showSnackBar('Opening report form...');
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Please include reproduction steps and screenshots if possible.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -845,12 +1416,14 @@ class _GuidanceChip extends StatelessWidget {
 
 class _DeviceSession {
   const _DeviceSession({
+    required this.id,
     required this.name,
     required this.location,
     required this.lastActive,
     required this.isCurrent,
   });
 
+  final String id;
   final String name;
   final String location;
   final String lastActive;
@@ -861,11 +1434,13 @@ class _SessionTile extends StatelessWidget {
   const _SessionTile({
     required this.session,
     required this.onTap,
+    required this.onRemove,
     required this.theme,
   });
 
   final _DeviceSession session;
   final VoidCallback onTap;
+  final VoidCallback? onRemove;
   final ThemeData theme;
 
   @override
@@ -879,14 +1454,14 @@ class _SessionTile extends StatelessWidget {
             : _tintColor(theme.colorScheme.surface, 0.35),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: session.isCurrent ? null : onTap,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Icon(
-                  session.isCurrent ? Icons.device_hub : Icons.devices_other,
+                  session.isCurrent ? Icons.phone_android : Icons.devices_other,
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 12),
@@ -924,10 +1499,300 @@ class _SessionTile extends StatelessWidget {
                     ),
                     child: Text('Current', style: theme.textTheme.bodySmall),
                   ),
+                if (!session.isCurrent && onRemove != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      size: 20,
+                      color: theme.colorScheme.error,
+                    ),
+                    onPressed: onRemove,
+                    tooltip: 'End session',
+                  ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmergencyContact {
+  const _EmergencyContact({required this.name, required this.phone});
+
+  final String name;
+  final String phone;
+}
+
+class _SecurityTip {
+  const _SecurityTip({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+}
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+  bool _isChanging = false;
+
+  double get _passwordStrength {
+    final password = _newPasswordController.text;
+    if (password.isEmpty) return 0;
+
+    double strength = 0;
+    if (password.length >= 8) strength += 0.2;
+    if (password.length >= 12) strength += 0.2;
+    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.15;
+    if (RegExp(r'[a-z]').hasMatch(password)) strength += 0.15;
+    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.15;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.15;
+
+    return strength.clamp(0.0, 1.0);
+  }
+
+  String get _strengthLabel {
+    final strength = _passwordStrength;
+    if (strength < 0.3) return 'Weak';
+    if (strength < 0.6) return 'Fair';
+    if (strength < 0.8) return 'Good';
+    return 'Strong';
+  }
+
+  Color get _strengthColor {
+    final strength = _passwordStrength;
+    if (strength < 0.3) return Colors.red;
+    if (strength < 0.6) return Colors.orange;
+    if (strength < 0.8) return Colors.yellow.shade700;
+    return Colors.green;
+  }
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    if (_currentPasswordController.text.isEmpty) {
+      _showError('Please enter your current password');
+      return;
+    }
+    if (_newPasswordController.text.length < 8) {
+      _showError('New password must be at least 8 characters');
+      return;
+    }
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      _showError('Passwords do not match');
+      return;
+    }
+    if (_passwordStrength < 0.5) {
+      _showError('Please choose a stronger password');
+      return;
+    }
+
+    setState(() => _isChanging = true);
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('Change Password'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _currentPasswordController,
+              obscureText: _obscureCurrent,
+              decoration: InputDecoration(
+                labelText: 'Current password',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureCurrent ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureCurrent = !_obscureCurrent),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: _obscureNew,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: 'New password',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureNew ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                ),
+              ),
+            ),
+            if (_newPasswordController.text.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _passwordStrength,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation(_strengthColor),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _strengthLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _strengthColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  _RequirementChip(
+                    label: '12+ chars',
+                    met: _newPasswordController.text.length >= 12,
+                  ),
+                  _RequirementChip(
+                    label: 'Uppercase',
+                    met: RegExp(r'[A-Z]').hasMatch(_newPasswordController.text),
+                  ),
+                  _RequirementChip(
+                    label: 'Number',
+                    met: RegExp(r'[0-9]').hasMatch(_newPasswordController.text),
+                  ),
+                  _RequirementChip(
+                    label: 'Symbol',
+                    met: RegExp(
+                      r'[!@#$%^&*(),.?":{}|<>]',
+                    ).hasMatch(_newPasswordController.text),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirm,
+              decoration: InputDecoration(
+                labelText: 'Confirm new password',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirm ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isChanging ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isChanging ? null : _changePassword,
+          child: _isChanging
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Change Password'),
+        ),
+      ],
+    );
+  }
+}
+
+class _RequirementChip extends StatelessWidget {
+  const _RequirementChip({required this.label, required this.met});
+
+  final String label;
+  final bool met;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: met
+            ? Colors.green.withAlpha(30)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: met ? Colors.green : Colors.transparent),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            met ? Icons.check : Icons.circle_outlined,
+            size: 14,
+            color: met ? Colors.green : Theme.of(context).colorScheme.outline,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: met
+                  ? Colors.green
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

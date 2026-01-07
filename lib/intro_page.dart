@@ -11,50 +11,173 @@ class IntroPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton.icon(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const HomePage()),
+      body: Stack(
+        children: [
+          // Gradient Header with Wave
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: size.height * 0.35,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF059669), // Emerald
+                    Color(0xFF10B981), // Green
+                    Color(0xFF14B8A6), // Teal
+                  ],
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Wave decoration
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: CustomPaint(
+                      size: Size(size.width, 60),
+                      painter: _WavePainter(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                      ),
+                    ),
                   ),
-                  icon: const Icon(Icons.exit_to_app),
-                  label: const Text('Skip to Home'),
+                  // Header content
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 4),
+                          // Skip button
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: TextButton.icon(
+                              onPressed: () =>
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const HomePage(),
+                                    ),
+                                  ),
+                              icon: const Icon(
+                                Icons.exit_to_app,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Skip',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.white.withAlpha(30),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Logo/Icon
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(30),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.security,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Title
+                          const Text(
+                            'LindAV',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Security Suite',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withAlpha(200),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Main content
+          Positioned(
+            top: size.height * 0.30,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
                 ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Meet Lindav Security',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Choose how you want to begin. You can run a scan, take security readiness tests, or inspect your network connection.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: ListView(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // _BrandHero(colorScheme: colorScheme),
-                    const SizedBox(height: 24),
+                    // Welcome section
+                    Text(
+                      'Welcome !',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Choose how you want to begin. You can run a scan, take security readiness tests, or inspect your network connection.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.outline,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Action tiles
                     _IntroTile(
                       icon: Icons.shield,
                       title: 'Start Scanning',
                       description:
                           'Perform quick, full, or USB scans to check for suspicious files on your device.',
-                      color: colorScheme.primary,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF059669), Color(0xFF10B981)],
+                      ),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ScanPage()),
                       ),
@@ -62,10 +185,12 @@ class IntroPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     _IntroTile(
                       icon: Icons.quiz_outlined,
-                      title: 'Take Security Tests',
+                      title: 'Security Center',
                       description:
-                          'Practice phishing recognition, verify backup procedures, and review password policies.',
-                      color: colorScheme.secondary,
+                          'Manage account protection, device sessions, privacy settings, and security monitoring.',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
+                      ),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const TestsPage()),
                       ),
@@ -76,7 +201,9 @@ class IntroPage extends StatelessWidget {
                       title: 'Check Network Health',
                       description:
                           'Measure your connectivity quality, speed, and latency for safer browsing.',
-                      color: colorScheme.tertiary,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+                      ),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const NetworkStatusPage(),
@@ -89,21 +216,85 @@ class IntroPage extends StatelessWidget {
                       title: 'Go to Dashboard',
                       description:
                           'View quick actions and manage your protection experience from the central hub.',
-                      color: colorScheme.primaryContainer,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF047857), Color(0xFF065F46)],
+                      ),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const HomePage()),
                       ),
-                      foregroundOverride: colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Footer
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'JERMAN TECHNOLOGY',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.outline,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Technology with purpose',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.outline.withAlpha(150),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
+}
+
+// Wave painter for curved header
+class _WavePainter extends CustomPainter {
+  final Color color;
+
+  _WavePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, size.height * 0.6);
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height * 0.2,
+      size.width * 0.5,
+      size.height * 0.5,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.75,
+      size.height * 0.8,
+      size.width,
+      size.height * 0.4,
+    );
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _IntroTile extends StatelessWidget {
@@ -111,115 +302,97 @@ class _IntroTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.description,
-    required this.color,
+    required this.gradient,
     required this.onTap,
-    this.foregroundOverride,
   });
 
   final IconData icon;
   final String title;
   final String description;
-  final Color color;
+  final Gradient gradient;
   final VoidCallback onTap;
-  final Color? foregroundOverride;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = foregroundOverride ?? Colors.white;
-
-    return Material(
-      borderRadius: BorderRadius.circular(20),
-      color: color,
-      child: InkWell(
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
         borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: foreground.withOpacity(0.1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon container
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(40),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 26),
                 ),
-                child: Icon(icon, color: foreground),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 16),
+                // Text content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: foreground.withOpacity(0.85),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(220),
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: foreground),
-            ],
+                const SizedBox(width: 8),
+                // Arrow
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-// class _BrandHero extends StatelessWidget {
-//   const _BrandHero({required this.colorScheme});
-
-//   final ColorScheme colorScheme;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.all(24),
-//       decoration: BoxDecoration(
-//         color: colorScheme.surfaceVariant,
-//         borderRadius: BorderRadius.circular(20),
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.center,
-//         children: [
-//           ClipRRect(
-//             borderRadius: BorderRadius.circular(16),
-//             child: Image.asset(
-//               'assets/logo.png',
-//               height: 140,
-//               fit: BoxFit.cover,
-//             ),
-//           ),
-//           const SizedBox(height: 16),
-//           Text(
-//             'JERMAN TECHNOLOGY',
-//             style: Theme.of(
-//               context,
-//             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-//             textAlign: TextAlign.center,
-//           ),
-//           const SizedBox(height: 6),
-//           Text(
-//             'Technology with purpose, powering secure experiences.',
-//             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-//               color: colorScheme.onSurfaceVariant,
-//             ),
-//             textAlign: TextAlign.center,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
