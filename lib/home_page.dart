@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'device_performance_page.dart';
 import 'intro_page.dart';
 import 'network_status_page.dart';
 import 'scan_page.dart';
@@ -189,6 +190,21 @@ class HomePage extends StatelessWidget {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const NetworkStatusPage(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _FeatureCard(
+                      icon: Icons.speed,
+                      title: 'Device Performance',
+                      description:
+                          'Monitor CPU, memory, storage, battery, and network usage.',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0D9488), Color(0xFF0891B2)],
+                      ),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DevicePerformancePage(),
                         ),
                       ),
                     ),
