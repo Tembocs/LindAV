@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'settings_page.dart';
-import 'splash_page.dart';
 import 'threat_details_page.dart';
 import 'widgets/network_status_widget.dart';
 import 'theme_controller.dart';
@@ -297,9 +296,14 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  // Green color palette
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
+  static const Color _teal = Color(0xFF14B8A6);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
     final latest = _history.isNotEmpty ? _history.first : null;
 
     return WillPopScope(
@@ -329,90 +333,217 @@ class _ScanPageState extends State<ScanPage> {
         return shouldExit;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Device Scans'),
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          actions: [
-            const NetworkIndicator(),
-            IconButton(
-              icon: const Icon(Icons.restart_alt),
-              tooltip: 'Reset App',
-              onPressed: _resetApp,
+        body: Stack(
+          children: [
+            // Gradient Header
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: size.height * 0.28,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [_emerald, _green, _teal],
+                  ),
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        // Top bar
+                        Row(
+                          children: [
+                            // Back button
+                            if (Navigator.of(context).canPop())
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            const Spacer(),
+                            // Action buttons
+                            const NetworkIndicator(),
+                            _HeaderIconButton(
+                              icon: Icons.settings,
+                              tooltip: 'Settings',
+                              onPressed: _openSettings,
+                            ),
+                            _HeaderIconButton(
+                              icon: Icons.info_outline,
+                              tooltip: 'About',
+                              onPressed: _openAbout,
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        // Title row
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(30),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.shield_moon,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Device Scans',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  _isScanning
+                                      ? 'Scanning in progress...'
+                                      : 'Keep your device protected',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white.withAlpha(200),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: 'Settings',
-              onPressed: _openSettings,
-            ),
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              tooltip: 'About',
-              onPressed: _openAbout,
+
+            // Main content
+            Positioned(
+              top: size.height * 0.24,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SecurityStatusCard(
+                        isScanning: _isScanning,
+                        latest: latest,
+                        progress: _progress,
+                      ),
+                      const SizedBox(height: 16),
+                      _ScanActions(
+                        onQuickScan: () => _startScan('Quick Scan'),
+                        onFullScan: _startFolderScan,
+                        onUsbScan: _startUsbScan,
+                        isScanning: _isScanning,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Icon(Icons.history, size: 20, color: _emerald),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Scan History',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          if (_history.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: _clearHistory,
+                              icon: Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Colors.red.shade400,
+                              ),
+                              label: Text(
+                                'Clear',
+                                style: TextStyle(color: Colors.red.shade400),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_history.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: _emerald.withAlpha(15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: _emerald.withAlpha(40)),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 48,
+                                color: _emerald.withAlpha(100),
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'No scans yet',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Tap Quick Scan to start protecting your device',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...List.generate(_history.length, (index) {
+                          final item = _history[index];
+                          return _HistoryTile(
+                            result: item,
+                            onTap: () {
+                              if (item.threatsFound > 0 &&
+                                  item.detectedThreats.isNotEmpty) {
+                                _viewThreatDetails(item);
+                              }
+                            },
+                          );
+                        }),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SecurityStatusCard(
-                isScanning: _isScanning,
-                latest: latest,
-                progress: _progress,
-              ),
-              const SizedBox(height: 16),
-              _ScanActions(
-                onQuickScan: () => _startScan('Quick Scan'),
-                onFullScan: _startFolderScan,
-                onUsbScan: _startUsbScan,
-                isScanning: _isScanning,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Scan history',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: _history.isEmpty
-                    ? const Center(
-                        child: Text('No scans yet. Tap Quick Scan to start.'),
-                      )
-                    : ListView.separated(
-                        itemCount: _history.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final item = _history[index];
-                          return ListTile(
-                            leading: Icon(
-                              item.threatsFound == 0
-                                  ? Icons.check_circle
-                                  : Icons.warning_amber_rounded,
-                              color: item.threatsFound == 0
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                            title: Text(item.type),
-                            subtitle: Text(
-                              '${item.scannedFiles} files • ${item.threatsFound} threats • '
-                              '${_formatDateTime(item.dateTime)}',
-                            ),
-                            trailing: item.threatsFound > 0
-                                ? const Icon(Icons.chevron_right)
-                                : null,
-                            onTap:
-                                item.threatsFound > 0 &&
-                                    item.detectedThreats.isNotEmpty
-                                ? () => _viewThreatDetails(item)
-                                : null,
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -429,6 +560,62 @@ class _ScanPageState extends State<ScanPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _clearHistory() async {
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Clear Scan History?'),
+        content: const Text(
+          'This will delete all scan history records. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldClear == true) {
+      try {
+        final dir = await _getDataDirectory();
+        final historyFile = File(
+          '${dir.path}${Platform.pathSeparator}history.json',
+        );
+        if (await historyFile.exists()) {
+          await historyFile.delete();
+        }
+      } catch (_) {
+        // Ignore errors during cleanup
+      }
+
+      setState(() {
+        _history.clear();
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Scan history cleared'),
+          backgroundColor: Color(0xFF059669),
+        ),
+      );
+    }
   }
 
   Future<void> _startFolderScan() async {
@@ -493,58 +680,6 @@ class _ScanPageState extends State<ScanPage> {
       applicationVersion: '1.0.0',
       applicationLegalese: 'We don\'t collect user data. Demo scanner only.',
     );
-  }
-
-  Future<void> _resetApp() async {
-    final shouldReset = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return AlertDialog(
-          title: const Text('Reset App?'),
-          content: const Text(
-            'This will clear all scan history and reset the app to its initial state. This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
-              child: const Text('Reset'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldReset == true) {
-      try {
-        final dir = await _getDataDirectory();
-        final historyFile = File(
-          '${dir.path}${Platform.pathSeparator}history.json',
-        );
-        final logFile = File('${dir.path}${Platform.pathSeparator}scan.log');
-
-        if (await historyFile.exists()) {
-          await historyFile.delete();
-        }
-        if (await logFile.exists()) {
-          await logFile.delete();
-        }
-      } catch (_) {
-        // Ignore errors during cleanup
-      }
-
-      if (!mounted) return;
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const SplashPage()),
-        (route) => false,
-      );
-    }
   }
 }
 
@@ -732,4 +867,160 @@ String _formatDateTime(DateTime dateTime) {
   final minute = time.minute.toString().padLeft(2, '0');
   return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
       '$hours:$minute $suffix';
+}
+
+// Header icon button widget
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, color: Colors.white),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.white.withAlpha(25),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+}
+
+// History tile widget for scan history
+class _HistoryTile extends StatelessWidget {
+  final ScanResult result;
+  final VoidCallback onTap;
+
+  const _HistoryTile({required this.result, required this.onTap});
+
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
+
+  @override
+  Widget build(BuildContext context) {
+    final hasThreats = result.threatsFound > 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: hasThreats
+              ? [Colors.red.shade50, Colors.orange.shade50]
+              : [_emerald.withAlpha(20), _green.withAlpha(20)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasThreats ? Colors.red.withAlpha(50) : _emerald.withAlpha(50),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: hasThreats
+                          ? [Colors.red, Colors.orange]
+                          : [_emerald, _green],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    hasThreats
+                        ? Icons.warning_rounded
+                        : Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        result.type,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${result.scannedFiles} files scanned',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatDateTime(result.dateTime),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: hasThreats
+                            ? Colors.red.withAlpha(25)
+                            : _emerald.withAlpha(25),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        hasThreats
+                            ? '${result.threatsFound} threat${result.threatsFound > 1 ? 's' : ''}'
+                            : 'Clean',
+                        style: TextStyle(
+                          color: hasThreats ? Colors.red : _emerald,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.grey.shade400,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

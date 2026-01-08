@@ -163,111 +163,214 @@ class _TestsPageState extends State<TestsPage> with TickerProviderStateMixin {
     });
   }
 
+  // Green color palette
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
+  static const Color _teal = Color(0xFF14B8A6);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Security Center'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        actions: [
-          if (_isSavingSettings)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
+      body: Stack(
+        children: [
+          // Gradient Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: size.height * 0.28,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_emerald, _green, _teal],
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      // Top bar
+                      Row(
+                        children: [
+                          if (Navigator.of(context).canPop())
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          const Spacer(),
+                          if (_isSavingSettings)
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
+                      // Title row
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(30),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.security_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Security Center',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                'Manage your security settings',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withAlpha(200),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
+
+          // Main content
+          Positioned(
+            top: size.height * 0.24,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+              ),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  children: [
+                    _SectionCard(
+                      title: 'Account Security',
+                      subtitle: 'Keep accounts protected and recoverable.',
+                      icon: Icons.shield_outlined,
+                      children: [
+                        _buildChangePasswordTile(),
+                        _buildTwoFactorTile(),
+                        _buildRecoveryOptionsTile(),
+                        _buildLoginAlertsTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Devices & Sessions',
+                      subtitle: 'Control where you are signed in.',
+                      icon: Icons.devices_outlined,
+                      children: [
+                        _buildActiveSessionsTile(),
+                        _buildLogoutOtherDevicesTile(),
+                        _buildRememberedDevicesTile(),
+                        _buildSessionTimeoutTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Privacy & App Lock',
+                      subtitle: 'Protect data on this device.',
+                      icon: Icons.lock_outline,
+                      children: [
+                        _buildAppLockTile(),
+                        _buildHideNotificationsTile(),
+                        _buildScreenshotProtectionTile(),
+                        _buildClipboardProtectionTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Permissions',
+                      subtitle: 'Grant only what is necessary.',
+                      icon: Icons.tune_outlined,
+                      children: [
+                        _buildPermissionsDashboardTile(),
+                        _buildPermissionToggles(),
+                        _buildDataAccessLogTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Data & Recovery',
+                      subtitle: 'Secure, backup, and manage your data.',
+                      icon: Icons.backup_outlined,
+                      children: [
+                        _buildEncryptionStatusTile(),
+                        _buildBackupRestoreTile(),
+                        _buildDownloadDataTile(),
+                        _buildDeleteAccountTile(),
+                        _buildIncidentReportingTile(),
+                        _buildEvidenceHandlingTile(),
+                        _buildAuditTrailTile(),
+                        _buildEmergencyContactsTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SectionCard(
+                      title: 'Help / Legal',
+                      subtitle: 'Guidance, concerns, and policies.',
+                      icon: Icons.help_outline,
+                      children: [
+                        _buildSecurityTipsTile(),
+                        _buildReportIssueTile(),
+                        _buildPolicyLinksTile(),
+                        _buildVersionInfoTile(),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            _SectionCard(
-              title: 'Account Security',
-              subtitle: 'Keep accounts protected and recoverable.',
-              children: [
-                _buildChangePasswordTile(),
-                _buildTwoFactorTile(),
-                _buildRecoveryOptionsTile(),
-                _buildLoginAlertsTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              title: 'Devices & Sessions',
-              subtitle:
-                  'Control where you are signed in and how long sessions last.',
-              children: [
-                _buildActiveSessionsTile(),
-                _buildLogoutOtherDevicesTile(),
-                _buildRememberedDevicesTile(),
-                _buildSessionTimeoutTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              title: 'Privacy & App Lock',
-              subtitle:
-                  'Protect data on this device even when the app is running.',
-              children: [
-                _buildAppLockTile(),
-                _buildHideNotificationsTile(),
-                _buildScreenshotProtectionTile(),
-                _buildClipboardProtectionTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              title: 'Permissions',
-              subtitle: 'Grant only what is necessary and monitor access.',
-              children: [
-                _buildPermissionsDashboardTile(),
-                _buildPermissionToggles(),
-                _buildDataAccessLogTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              title: 'Data & Recovery',
-              subtitle:
-                  'Understand how your information is secured, backed up, and retained.',
-              children: [
-                _buildEncryptionStatusTile(),
-                _buildBackupRestoreTile(),
-                _buildDownloadDataTile(),
-                _buildDeleteAccountTile(),
-                _buildIncidentReportingTile(),
-                _buildEvidenceHandlingTile(),
-                _buildAuditTrailTile(),
-                _buildEmergencyContactsTile(),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              title: 'Help / Legal',
-              subtitle: 'Find guidance, report concerns, and review policies.',
-              children: [
-                _buildSecurityTipsTile(),
-                _buildReportIssueTile(),
-                _buildPolicyLinksTile(),
-                _buildVersionInfoTile(),
-              ],
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
       ),
     );
   }
@@ -1332,37 +1435,90 @@ class _SectionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.children,
+    required this.icon,
   });
 
   final String title;
   final String subtitle;
   final List<Widget> children;
+  final IconData icon;
+
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      elevation: 1,
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _emerald.withAlpha(30)),
+        boxShadow: [
+          BoxShadow(
+            color: _emerald.withAlpha(10),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [_emerald, _green],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
+            Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _emerald.withAlpha(100),
+                    _green.withAlpha(50),
+                    Colors.transparent,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(height: 12),
             ..._insertDividers(children),
           ],
         ),
@@ -1376,7 +1532,7 @@ class _SectionCard extends StatelessWidget {
     for (var i = 0; i < input.length; i++) {
       result.add(input[i]);
       if (i != input.length - 1) {
-        result.add(const Divider(height: 32));
+        result.add(Divider(height: 24, color: Colors.grey.shade200));
       }
     }
     return result;
@@ -1388,17 +1544,18 @@ class _IconBadge extends StatelessWidget {
 
   final IconData icon;
 
+  static const Color _emerald = Color(0xFF059669);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: _tintColor(colorScheme.primary, 0.12),
+        color: _emerald.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: colorScheme.primary),
+      child: Icon(icon, color: _emerald, size: 22),
     );
   }
 }
@@ -1408,9 +1565,26 @@ class _GuidanceChip extends StatelessWidget {
 
   final String label;
 
+  static const Color _emerald = Color(0xFF059669);
+
   @override
   Widget build(BuildContext context) {
-    return Chip(label: Text(label));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _emerald.withAlpha(20),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _emerald.withAlpha(50)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          color: _emerald,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
   }
 }
 

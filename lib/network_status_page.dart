@@ -4,6 +4,11 @@ import 'package:flutter/services.dart';
 import 'services/network_service.dart';
 import 'widgets/network_status_widget.dart';
 
+// Green color palette
+const Color _emerald = Color(0xFF059669);
+const Color _green = Color(0xFF10B981);
+const Color _teal = Color(0xFF14B8A6);
+
 class NetworkStatusPage extends StatefulWidget {
   const NetworkStatusPage({super.key});
 
@@ -145,39 +150,199 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
     final status = _networkService.currentStatus;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Network Status'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.speed),
-            tooltip: 'Run Speed Test',
-            onPressed: _networkService.isTestingSpeed ? null : _runSpeedTest,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: colorScheme.onPrimary,
-          labelColor: colorScheme.onPrimary,
-          unselectedLabelColor: colorScheme.onPrimary.withAlpha(180),
-          tabs: const [
-            Tab(icon: Icon(Icons.network_check), text: 'Status'),
-            Tab(icon: Icon(Icons.wifi_find), text: 'Scan'),
-            Tab(icon: Icon(Icons.save), text: 'Saved'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          _buildStatusTab(status),
-          _buildScanTab(),
-          _buildSavedNetworksTab(),
+          // Gradient Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: size.height * 0.28,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_emerald, _green, _teal],
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      // Top bar
+                      Row(
+                        children: [
+                          if (Navigator.of(context).canPop())
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          const Spacer(),
+                          _HeaderIconButton(
+                            icon: Icons.speed,
+                            tooltip: 'Run Speed Test',
+                            onPressed: _networkService.isTestingSpeed
+                                ? null
+                                : _runSpeedTest,
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      // Title row
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(30),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.network_check,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Network Status',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                _isScanning
+                                    ? 'Scanning networks...'
+                                    : 'Monitor your connection',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white.withAlpha(200),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Main content with tabs
+          Positioned(
+            top: size.height * 0.24,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  // Custom Tab Bar
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _emerald.withAlpha(20),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: _emerald,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: _emerald,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      tabs: const [
+                        Tab(
+                          height: 40,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.network_check, size: 18),
+                              SizedBox(width: 6),
+                              Text('Status'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          height: 40,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.wifi_find, size: 18),
+                              SizedBox(width: 6),
+                              Text('Scan'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          height: 40,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.save, size: 18),
+                              SizedBox(width: 6),
+                              Text('Saved'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Tab content
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildStatusTab(status),
+                        _buildScanTab(),
+                        _buildSavedNetworksTab(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -193,11 +358,22 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: _networkService.isTestingSpeed ? null : _refresh,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _emerald,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
           icon: _networkService.isTestingSpeed
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Icon(Icons.refresh),
           label: const Text('Refresh Status'),
@@ -225,13 +401,20 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
               ),
               ElevatedButton.icon(
                 onPressed: _isScanning ? null : _scanForNetworks,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _emerald,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 icon: _isScanning
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: colorScheme.onPrimary,
+                          color: Colors.white,
                         ),
                       )
                     : const Icon(Icons.radar),
@@ -246,12 +429,23 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.wifi_find, size: 64, color: colorScheme.outline),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: _emerald.withAlpha(20),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.wifi_find,
+                      size: 48,
+                      color: _emerald,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No networks scanned yet',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colorScheme.outline,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -293,13 +487,20 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.wifi_off, size: 64, color: colorScheme.outline),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _emerald.withAlpha(20),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.wifi_off, size: 48, color: _emerald),
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'No saved networks',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: colorScheme.outline),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -329,6 +530,8 @@ class _NetworkStatusPageState extends State<NetworkStatusPage>
           bottom: 16,
           child: FloatingActionButton.extended(
             onPressed: _showAddNetworkDialog,
+            backgroundColor: _emerald,
+            foregroundColor: Colors.white,
             icon: const Icon(Icons.add),
             label: const Text('Add Network'),
           ),
@@ -1074,6 +1277,7 @@ class _WiFiNetworkTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: _SignalIcon(signalStrength: network.signalStrength),
         title: Row(
@@ -1093,7 +1297,7 @@ class _WiFiNetworkTile extends StatelessWidget {
               ),
             ),
             if (network.isConnected)
-              Icon(Icons.check_circle, size: 18, color: Colors.green),
+              const Icon(Icons.check_circle, size: 18, color: _emerald),
             if (network.security != 'Open') ...[
               const SizedBox(width: 4),
               Icon(Icons.lock, size: 16, color: colorScheme.outline),
@@ -1132,7 +1336,7 @@ class _SignalIcon extends StatelessWidget {
 
     Color color;
     if (bars >= 3) {
-      color = Colors.green;
+      color = _emerald;
     } else if (bars == 2) {
       color = Colors.orange;
     } else {
@@ -1179,22 +1383,27 @@ class _SavedNetworkTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: colorScheme.primaryContainer,
-          child: Icon(Icons.wifi, color: colorScheme.primary),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _emerald.withAlpha(25),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.wifi, color: _emerald),
         ),
         title: Text(network.ssid),
         subtitle: Row(
           children: [
             Text(network.security),
             const SizedBox(width: 8),
-            Text('•'),
+            const Text('•'),
             const SizedBox(width: 8),
             Text(network.frequency),
             if (network.autoConnect) ...[
               const SizedBox(width: 8),
-              Icon(Icons.autorenew, size: 14, color: colorScheme.primary),
+              const Icon(Icons.autorenew, size: 14, color: _emerald),
             ],
           ],
         ),
@@ -1326,7 +1535,14 @@ class _InfoCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.speed, color: colorScheme.primary),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [_emerald, _green]),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.speed, color: Colors.white, size: 20),
+                ),
                 const SizedBox(width: 12),
                 Text(
                   'Current Network Stats',
@@ -1402,11 +1618,10 @@ class _TipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: colorScheme.primary, size: 20),
+        Icon(icon, color: _emerald, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
@@ -1431,7 +1646,7 @@ class _ResultRow extends StatelessWidget {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 18, color: colorScheme.outline),
+          Icon(icon, size: 18, color: _emerald),
           const SizedBox(width: 8),
         ],
         Text(
@@ -1444,6 +1659,40 @@ class _ResultRow extends StatelessWidget {
           style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -106,96 +106,178 @@ class ThreatDetailsPage extends StatelessWidget {
     required this.totalFilesScanned,
   });
 
+  // Green color palette
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
+  static const Color _teal = Color(0xFF14B8A6);
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Threat Report'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: 'Share Report',
-            onPressed: () => _shareReport(context),
-          ),
-        ],
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          // Summary Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: colorScheme.errorContainer,
-            child: Column(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 48,
-                  color: colorScheme.error,
+          // Gradient Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: size.height * 0.38,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [_emerald, _green, _teal],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '${threats.length} Threat${threats.length == 1 ? '' : 's'} Detected',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: colorScheme.error,
-                    fontWeight: FontWeight.bold,
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      // Top bar
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          const Spacer(),
+                          _HeaderIconButton(
+                            icon: Icons.share,
+                            tooltip: 'Share Report',
+                            onPressed: () => _shareReport(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Alert Icon
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // Threat count
+                      Text(
+                        '${threats.length} Threat${threats.length == 1 ? '' : 's'} Detected',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$scanType • $totalFilesScanned files scanned',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withAlpha(200),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Severity summary
+                      _buildSeveritySummary(context),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$scanType • $totalFilesScanned files scanned',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onErrorContainer,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildSeveritySummary(context),
-              ],
+              ),
             ),
           ),
-          // Threat List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: threats.length,
-              itemBuilder: (context, index) {
-                final threat = threats[index];
-                return _ThreatCard(
-                  threat: threat,
-                  onTap: () => _showThreatDetails(context, threat),
-                );
-              },
-            ),
-          ),
-          // Action Buttons
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _quarantineAll(context),
-                    icon: const Icon(Icons.security),
-                    label: const Text('Quarantine All'),
-                  ),
+
+          // Main content
+          Positioned(
+            top: size.height * 0.34,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _deleteAll(context),
-                    icon: const Icon(Icons.delete_forever),
-                    label: const Text('Delete All'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.error,
-                      foregroundColor: colorScheme.onError,
+              ),
+              child: Column(
+                children: [
+                  // Threat List
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      itemCount: threats.length,
+                      itemBuilder: (context, index) {
+                        final threat = threats[index];
+                        return _ThreatCard(
+                          threat: threat,
+                          onTap: () => _showThreatDetails(context, threat),
+                        );
+                      },
                     ),
                   ),
-                ),
-              ],
+                  // Action Buttons
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _quarantineAll(context),
+                            icon: const Icon(Icons.security),
+                            label: const Text('Quarantine All'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _emerald,
+                              side: const BorderSide(color: _emerald),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _deleteAll(context),
+                            icon: const Icon(Icons.delete_forever),
+                            label: const Text('Delete All'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -209,31 +291,27 @@ class ThreatDetailsPage extends StatelessWidget {
     final mediumCount = threats.where((t) => t.severity == 'Medium').length;
     final lowCount = threats.where((t) => t.severity == 'Low').length;
 
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 6,
       children: [
         if (criticalCount > 0)
           _SeverityChip(
             label: 'Critical: $criticalCount',
-            color: ThreatInfo.severityColorFor('Critical', colorScheme),
+            color: Colors.red.shade600,
           ),
         if (highCount > 0)
           _SeverityChip(
             label: 'High: $highCount',
-            color: ThreatInfo.severityColorFor('High', colorScheme),
+            color: Colors.orange.shade600,
           ),
         if (mediumCount > 0)
           _SeverityChip(
             label: 'Medium: $mediumCount',
-            color: ThreatInfo.severityColorFor('Medium', colorScheme),
+            color: Colors.amber.shade600,
           ),
-        if (lowCount > 0)
-          _SeverityChip(
-            label: 'Low: $lowCount',
-            color: ThreatInfo.severityColorFor('Low', colorScheme),
-          ),
+        if (lowCount > 0) _SeverityChip(label: 'Low: $lowCount', color: _teal),
       ],
     );
   }
@@ -372,26 +450,31 @@ class _SeverityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onChipColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : Colors.black87;
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+        color: Colors.white.withAlpha(30),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withAlpha(60)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: onChipColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -403,98 +486,147 @@ class _ThreatCard extends StatelessWidget {
 
   const _ThreatCard({required this.threat, required this.onTap});
 
+  static const Color _emerald = Color(0xFF059669);
+
+  Color _getSeverityColor() {
+    switch (threat.severity.toLowerCase()) {
+      case 'critical':
+        return Colors.red.shade600;
+      case 'high':
+        return Colors.orange.shade600;
+      case 'medium':
+        return Colors.amber.shade600;
+      case 'low':
+        return _emerald;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final severityColor = threat.severityColor(colorScheme);
-    final mutedColor = colorScheme.onSurfaceVariant;
-    final onSeverityColor =
-        ThemeData.estimateBrightnessForColor(severityColor) == Brightness.dark
-        ? Colors.white
-        : Colors.black87;
+    final severityColor = _getSeverityColor();
+    final mutedColor = Colors.grey.shade600;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: severityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: severityColor.withAlpha(60)),
+        boxShadow: [
+          BoxShadow(
+            color: severityColor.withAlpha(20),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [severityColor, severityColor.withAlpha(180)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(threat.threatIcon, color: Colors.white, size: 26),
                 ),
-                child: Icon(threat.threatIcon, color: severityColor, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        threat.fileName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: severityColor.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              threat.threatType,
+                              style: TextStyle(
+                                color: severityColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: severityColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              threat.severity,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        threat.filePath,
+                        style: TextStyle(color: mutedColor, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      threat.fileName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      threat.formattedFileSize,
+                      style: TextStyle(color: mutedColor, fontSize: 12),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      threat.threatType,
-                      style: TextStyle(
-                        color: severityColor,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      threat.filePath,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: mutedColor),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.grey.shade400,
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: severityColor,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      threat.severity,
-                      style: TextStyle(
-                        color: onSeverityColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    threat.formattedFileSize,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right, color: mutedColor),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -511,19 +643,31 @@ class _ThreatDetailSheet extends StatelessWidget {
     required this.scrollController,
   });
 
+  static const Color _emerald = Color(0xFF059669);
+  static const Color _green = Color(0xFF10B981);
+
+  Color _getSeverityColor() {
+    switch (threat.severity.toLowerCase()) {
+      case 'critical':
+        return Colors.red.shade600;
+      case 'high':
+        return Colors.orange.shade600;
+      case 'medium':
+        return Colors.amber.shade600;
+      case 'low':
+        return _emerald;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final severityColor = threat.severityColor(colorScheme);
-    // final mutedColor = colorScheme.onSurfaceVariant;
-    final onSeverityColor =
-        ThemeData.estimateBrightnessForColor(severityColor) == Brightness.dark
-        ? Colors.white
-        : Colors.black87;
+    final severityColor = _getSeverityColor();
 
     return SingleChildScrollView(
       controller: scrollController,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -533,26 +677,30 @@ class _ThreatDetailSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant,
+                color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // Threat icon and name
           Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  color: severityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [severityColor, severityColor.withAlpha(180)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(threat.threatIcon, color: severityColor, size: 32),
+                child: Icon(threat.threatIcon, color: Colors.white, size: 32),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,20 +711,20 @@ class _ThreatDetailSheet extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 6),
                     Container(
-                      margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: severityColor,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${threat.severity} Severity',
-                        style: TextStyle(
-                          color: onSeverityColor,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -590,24 +738,28 @@ class _ThreatDetailSheet extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Description
-          Text(
-            'Description',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          _SectionHeader(title: 'Description', icon: Icons.info_outline),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _emerald.withAlpha(15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _emerald.withAlpha(40)),
+            ),
+            child: Text(
+              threat.description,
+              style: TextStyle(color: Colors.grey.shade700, height: 1.5),
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(threat.description),
           const SizedBox(height: 24),
 
           // File Information
-          Text(
-            'File Information',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          _SectionHeader(
+            title: 'File Information',
+            icon: Icons.folder_outlined,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _DetailRow(label: 'File Name', value: threat.fileName),
           _DetailRow(label: 'File Path', value: threat.filePath),
           _DetailRow(label: 'File Size', value: threat.formattedFileSize),
@@ -618,12 +770,7 @@ class _ThreatDetailSheet extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Actions
-          Text(
-            'Actions',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
+          _SectionHeader(title: 'Actions', icon: Icons.flash_on_outlined),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -632,6 +779,14 @@ class _ThreatDetailSheet extends StatelessWidget {
                   onPressed: () => _openFileLocation(context),
                   icon: const Icon(Icons.folder_open),
                   label: const Text('Open Location'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _emerald,
+                    side: const BorderSide(color: _emerald),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -640,11 +795,19 @@ class _ThreatDetailSheet extends StatelessWidget {
                   onPressed: () => _quarantine(context),
                   icon: const Icon(Icons.security),
                   label: const Text('Quarantine'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _green,
+                    side: const BorderSide(color: _green),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -652,19 +815,22 @@ class _ThreatDetailSheet extends StatelessWidget {
               icon: const Icon(Icons.delete_forever),
               label: const Text('Delete This Threat'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.error,
-                foregroundColor: colorScheme.onError,
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
   void _openFileLocation(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     // Get the directory path
     final directory = threat.filePath.substring(
       0,
@@ -676,27 +842,26 @@ class _ThreatDetailSheet extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Path copied: $directory'),
-        backgroundColor: colorScheme.primary,
+        backgroundColor: _emerald,
       ),
     );
   }
 
   void _quarantine(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('File quarantined successfully'),
-        backgroundColor: colorScheme.primary,
+        backgroundColor: _emerald,
       ),
     );
     Navigator.of(context).pop();
   }
 
   void _delete(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete This Threat?'),
         content: Text(
           'This will permanently delete "${threat.fileName}". This action cannot be undone.',
@@ -709,8 +874,11 @@ class _ThreatDetailSheet extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.error,
-              foregroundColor: colorScheme.onError,
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: const Text('Delete'),
           ),
@@ -722,7 +890,7 @@ class _ThreatDetailSheet extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('File deleted successfully'),
-          backgroundColor: colorScheme.primary,
+          backgroundColor: _emerald,
         ),
       );
       Navigator.of(context).pop();
@@ -743,24 +911,82 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
-            child: Text(label, style: TextStyle(color: mutedColor)),
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Section header widget
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _SectionHeader({required this.title, required this.icon});
+
+  static const Color _emerald = Color(0xFF059669);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: _emerald),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
+
+// Header icon button widget
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, color: Colors.white),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.white.withAlpha(25),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
